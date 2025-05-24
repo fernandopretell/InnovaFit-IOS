@@ -6,6 +6,17 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		DE9138B02DDFF11D00953143 /* SVGKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE9138AF2DDFF11D00953143 /* SVGKit */; };
+		DE9138B22DDFF11D00953143 /* SVGKitSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DE9138B12DDFF11D00953143 /* SVGKitSwift */; };
+		DE9BF5BD2DDE6ECB00094A0D /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = DE9BF5BC2DDE6ECB00094A0D /* FirebaseAnalytics */; };
+		DE9BF5BF2DDE6ECB00094A0D /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = DE9BF5BE2DDE6ECB00094A0D /* FirebaseAuth */; };
+		DE9BF5C12DDE6ECB00094A0D /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = DE9BF5C02DDE6ECB00094A0D /* FirebaseCore */; };
+		DE9BF5C32DDE6ECB00094A0D /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = DE9BF5C22DDE6ECB00094A0D /* FirebaseCrashlytics */; };
+		DE9BF5C52DDE6ECB00094A0D /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = DE9BF5C42DDE6ECB00094A0D /* FirebaseFirestore */; };
+		DE9BF5D62DDE8C8B00094A0D /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = DE9BF5D52DDE8C8B00094A0D /* SDWebImageSwiftUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		DE9BF5962DDE564700094A0D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,9 +40,25 @@
 		DE9BF59F2DDE564700094A0D /* InnovaFitUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InnovaFitUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		DE9BF5CF2DDE781B00094A0D /* Exceptions for "InnovaFit" folder in "InnovaFit" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			platformFiltersByRelativePath = {
+				"GoogleService-Info.plist" = (ios, );
+			};
+			target = DE9BF5852DDE564400094A0D /* InnovaFit */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		DE9BF5882DDE564400094A0D /* InnovaFit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				DE9BF5CF2DDE781B00094A0D /* Exceptions for "InnovaFit" folder in "InnovaFit" target */,
+			);
 			path = InnovaFit;
 			sourceTree = "<group>";
 		};
@@ -52,6 +79,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DE9138B22DDFF11D00953143 /* SVGKitSwift in Frameworks */,
+				DE9BF5D62DDE8C8B00094A0D /* SDWebImageSwiftUI in Frameworks */,
+				DE9138B02DDFF11D00953143 /* SVGKit in Frameworks */,
+				DE9BF5BD2DDE6ECB00094A0D /* FirebaseAnalytics in Frameworks */,
+				DE9BF5C32DDE6ECB00094A0D /* FirebaseCrashlytics in Frameworks */,
+				DE9BF5C12DDE6ECB00094A0D /* FirebaseCore in Frameworks */,
+				DE9BF5C52DDE6ECB00094A0D /* FirebaseFirestore in Frameworks */,
+				DE9BF5BF2DDE6ECB00094A0D /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +147,14 @@
 			);
 			name = InnovaFit;
 			packageProductDependencies = (
+				DE9BF5BC2DDE6ECB00094A0D /* FirebaseAnalytics */,
+				DE9BF5BE2DDE6ECB00094A0D /* FirebaseAuth */,
+				DE9BF5C02DDE6ECB00094A0D /* FirebaseCore */,
+				DE9BF5C22DDE6ECB00094A0D /* FirebaseCrashlytics */,
+				DE9BF5C42DDE6ECB00094A0D /* FirebaseFirestore */,
+				DE9BF5D52DDE8C8B00094A0D /* SDWebImageSwiftUI */,
+				DE9138AF2DDFF11D00953143 /* SVGKit */,
+				DE9138B12DDFF11D00953143 /* SVGKitSwift */,
 			);
 			productName = InnovaFit;
 			productReference = DE9BF5862DDE564400094A0D /* InnovaFit.app */;
@@ -170,6 +213,9 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
+				KnownAssetTags = (
+					New,
+				);
 				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
@@ -195,6 +241,11 @@
 			);
 			mainGroup = DE9BF57D2DDE564400094A0D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				DE9BF5BB2DDE6ECB00094A0D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				DE9BF5D42DDE8C8B00094A0D /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
+				DE9138AE2DDFF11D00953143 /* XCRemoteSwiftPackageReference "SVGKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DE9BF5872DDE564400094A0D /* Products */;
 			projectDirPath = "";
@@ -400,21 +451,26 @@
 				DEVELOPMENT_TEAM = 6MT8FN6TV4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = InnovaFit/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.fernandopretell.InnovaFit;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fpretell.SmartGym;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -428,21 +484,26 @@
 				DEVELOPMENT_TEAM = 6MT8FN6TV4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = InnovaFit/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.fernandopretell.InnovaFit;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fpretell.SmartGym;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -558,6 +619,76 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		DE9138AE2DDFF11D00953143 /* XCRemoteSwiftPackageReference "SVGKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SVGKit/SVGKit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
+		DE9BF5BB2DDE6ECB00094A0D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.13.0;
+			};
+		};
+		DE9BF5D42DDE8C8B00094A0D /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImageSwiftUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DE9138AF2DDFF11D00953143 /* SVGKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE9138AE2DDFF11D00953143 /* XCRemoteSwiftPackageReference "SVGKit" */;
+			productName = SVGKit;
+		};
+		DE9138B12DDFF11D00953143 /* SVGKitSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE9138AE2DDFF11D00953143 /* XCRemoteSwiftPackageReference "SVGKit" */;
+			productName = SVGKitSwift;
+		};
+		DE9BF5BC2DDE6ECB00094A0D /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE9BF5BB2DDE6ECB00094A0D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		DE9BF5BE2DDE6ECB00094A0D /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE9BF5BB2DDE6ECB00094A0D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		DE9BF5C02DDE6ECB00094A0D /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE9BF5BB2DDE6ECB00094A0D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		DE9BF5C22DDE6ECB00094A0D /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE9BF5BB2DDE6ECB00094A0D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		DE9BF5C42DDE6ECB00094A0D /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE9BF5BB2DDE6ECB00094A0D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		DE9BF5D52DDE8C8B00094A0D /* SDWebImageSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE9BF5D42DDE8C8B00094A0D /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */;
+			productName = SDWebImageSwiftUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DE9BF57E2DDE564400094A0D /* Project object */;
 }
