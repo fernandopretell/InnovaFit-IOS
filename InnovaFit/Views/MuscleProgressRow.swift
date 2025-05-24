@@ -12,11 +12,11 @@ struct MuscleProgressRow: View {
         HStack(spacing: 0) {
             // Texto con ancho fijo (igual para todos los labels)
             Text(label)
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 14, weight: .bold))
                 .frame(width: maxLabelWidth, alignment: .center)
                 .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 3)
                 .background(Color.black)
                 .cornerRadius(12)
                 .zIndex(1)
@@ -27,7 +27,7 @@ struct MuscleProgressRow: View {
                 // Barra de fondo con degradado y máscara
                 RoundedRectangle(cornerRadius: 10)
                     .fill(gymColor.opacity(weight/100))
-                    .frame(height: 16)
+                    .frame(height: 13)
                     .mask(
                         GeometryReader { geometry in
                             RoundedRectangle(cornerRadius: 10)
@@ -39,7 +39,7 @@ struct MuscleProgressRow: View {
                 // Contorno completo
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(Color.black, lineWidth: 1)
-                    .frame(height: 16)
+                    .frame(height: 13)
             }
             .offset(x: -8) // Superpone con el texto
             .frame(maxWidth: .infinity)
@@ -47,12 +47,14 @@ struct MuscleProgressRow: View {
             
             // Peso a la derecha
             Text("\(Int(weight))")
-                .font(.system(size: 32, weight: .black))
+                .font(.system(size: 30, weight: .black))
                 .foregroundColor(.black)
+                .padding(.leading, 5)
             
             Text("%")
                 .font(.system(size: 14, weight: .heavy))
                 .foregroundColor(.black)
+                .padding(.top, 8)
         }
     }
 }

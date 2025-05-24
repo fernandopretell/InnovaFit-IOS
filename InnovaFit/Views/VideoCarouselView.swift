@@ -26,10 +26,10 @@ struct VideoCarouselView: View {
                             .frame(height: totalHeight * 0.3) // 30% del alto disponible
 
                         Color.black
-                            .frame(height: totalHeight * 0.015) // 2%
+                            .frame(height: totalHeight * 0.01) // 2%
 
                         Color.white
-                            .frame(height: totalHeight * 0.68) // 68%
+                            .frame(height: totalHeight * 0.69) // 68%
                     }
                     .edgesIgnoringSafeArea(.all) // opcional
             }
@@ -44,27 +44,19 @@ struct VideoCarouselView: View {
                                     .resizable()
                                     .scaledToFill()
                                     .frame(width: slideWidth, height: 300)
-                                    .clipped()
-                                    .cornerRadius(16)
-                                    .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(Color.black, lineWidth: 5)
-                                        )
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.black, lineWidth: 7)
+                                    )
                                 
                                 NavigationLink(destination: VideoPlayerView(video: videos[index])) {
                                     ZStack {
                                         // Play icono centrado
                                         ZStack {
-                                            Image(systemName: "circle.fill")
+                                            Image("icon_play")
                                                 .resizable()
                                                 .frame(width: 60, height: 60)
-                                                .foregroundColor(Color(hex: gymColor))
-                                            
-                                            Image(systemName: "play.fill")
-                                                .resizable()
-                                                .frame(width: 25, height: 25)
-                                                .foregroundColor(.black)
-                                                .offset(x: 3)
                                         }
                                         
                                         // Texto en parte inferior
@@ -81,9 +73,8 @@ struct VideoCarouselView: View {
                                                 .padding(.bottom, 16)
                                         }
                                     }
-                                    .frame(width: slideWidth, height: 300) // Asegura que el ZStack tenga el tamaño del slide
+                                    .frame(width: slideWidth, height: 310)
                                 }
-                                
                             }
                             .id(index)
                         }
@@ -129,8 +120,6 @@ struct ScrollOffsetKey: PreferenceKey {
         value = nextValue()
     }
 }
-
-
 
 struct VideoCarouselView_Previews: PreviewProvider {
     static var previews: some View {

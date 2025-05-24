@@ -26,24 +26,23 @@ struct MuscleListView: View {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 110)
+                        .frame(height: 100)
                 } else {
                     ProgressView()
-                        .frame(height: 110)
+                        .frame(height: 100)
                 }
             }
         }
     }
-
     
     var body: some View {
         let maxLabelWidth = sortedMuscles.map { $0.name.width(usingFont: .systemFont(ofSize: 16, weight: .bold)) }.max() ?? 100
         
-        VStack(spacing: 24) {
+        VStack(spacing: 12) {
             // Mostrar los íconos arriba
             muscleIcons
             
-            VStack(spacing: 5) {
+            VStack(spacing: 4) {
                 ForEach(sortedMuscles) { item in
                     MuscleProgressRow(
                         label: item.name,

@@ -24,12 +24,12 @@ struct MachineScreenContent: View {
         ZStack(alignment: .center) {
             Color.black
                 .clipShape(RoundedBottomShape(radius: 30))
-                .frame(height: 70)
+                .frame(height: 55)
             
-            Image("AppLogo")
+            Image("AppLogo1")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 30)
+                .frame(height: 25)
             
         }
         .background(Color(hex: gym.safeColor))
@@ -37,12 +37,12 @@ struct MachineScreenContent: View {
 
     private var machineHeader: some View {
         VStack(spacing: 0) {
-            Text(machine.name)
-                .font(.system(size: 32, weight: .heavy))
+            Text(machine.name.uppercased())
+                .font(.system(size: 30, weight: .heavy))
                 .foregroundColor(Color.black)
 
             Text("Con esta máquina puedes trabajar")
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundColor(Color.black)
         }
         .padding(.top, 16)
@@ -53,11 +53,11 @@ struct MachineScreenContent: View {
     private var muscleTitle: some View {
         VStack(spacing: 0) {
             Text("Realizando este ejercicio")
-                .font(.system(size: 24, weight: .heavy))
+                .font(.system(size: 22, weight: .heavy))
                 .foregroundColor(Color.black)
 
             Text("Estarás trabajando los siguientes músculos...")
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundColor(Color.black)
         }
     }
