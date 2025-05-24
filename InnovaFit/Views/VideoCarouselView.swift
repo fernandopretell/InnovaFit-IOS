@@ -7,6 +7,7 @@ struct VideoCarouselView: View {
     let gymColor: String
     
     @State private var currentIndex: Int = 0 // Start from the first real slide
+    @State private var selectedVideo: Video? = nil
     private let slideWidth = UIScreen.main.bounds.width * 0.6
     private let slideSpacing: CGFloat = 25
     
@@ -50,8 +51,9 @@ struct VideoCarouselView: View {
                                             .stroke(Color.black, lineWidth: 7)
                                     )
                                 
-                                NavigationLink(destination: VideoPlayerView(video: videos[index])) {
-                                    ZStack {
+                                Button {
+                                    selectedVideo = videos[index]
+                                } label: {                                    ZStack {
                                         // Play icono centrado
                                         ZStack {
                                             Image("icon_play")
@@ -100,17 +102,16 @@ struct VideoCarouselView: View {
                         }
                     }
                 }
-            }             
-        }
-        .frame(height: 348)
-        .onAppear {
-            // Optional: set up a timer to auto-scroll
-            Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
-                withAnimation {
-                    currentIndex += 1
-                }
             }
         }
+        .frame(height: 348)
+        .sheet(item: $selectedVideo) { video in
+                    if (video.segments ?? []).isEmpty {
+                        VideoPlayerView(video: video)
+                    } else {
+                        SegmentedVideoPlayerView(video: video)
+                    }
+                }
     }
 }
 
