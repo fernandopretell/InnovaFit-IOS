@@ -2,190 +2,149 @@ import SwiftUI
 import AVKit
 
 struct SegmentedVideoPlayerView: View {
-    let video: Video
+    let url: URL
+    let segments: [Segment]
+    let gymColor: Color
+    let onDismiss: () -> Void
+    let onAllSegmentsFinished: () -> Void
 
-    @Environment(\.dismiss) private var dismiss
-    @State private var player: AVPlayer = AVPlayer()
-    @State private var currentSegmentIndex: Int = 0
-    @State private var isReady = false
-    @State private var showButtons = false
-    @State private var segmentRestartTrigger = 0
+    @State private var player = AVPlayer()
+    @State private var currentSegmentIndex = 0
+    @State private var isShowingControls = false
     @State private var userSawAllSegments = false
-    @State private var segmentProgress: [CGFloat] = []
-
-    var segments: [Segment] {
-        video.segments ?? []
-    }
 
     var body: some View {
         ZStack {
             VideoPlayer(player: player)
-                .onAppear {
-                    setupPlayer()
-                }
-                .onDisappear {
-                    player.pause()
-                }
                 .ignoresSafeArea()
+                .onAppear {
+                    player.replaceCurrentItem(with: AVPlayerItem(url: url))
+                    playCurrentSegment()
+                    addPeriodicTimeObserver()
+                }
 
-            if isReady == false {
-                ProgressView("Cargando...")
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .scaleEffect(1.5)
-                    .background(Color.black.opacity(0.6))
-                    .ignoresSafeArea()
+            // Logo superior
+            VStack {
+                HStack {
+                    Spacer()
+                    Image("AppLogo1")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 40)
+                        .foregroundColor(gymColor)
+                    Spacer()
+                }
+                .padding()
+                Spacer()
             }
 
-            if showButtons {
-                VStack(spacing: 20) {
-                    if currentSegmentIndex > 0 {
-                        Button("Anterior") {
-                            goToSegment(currentSegmentIndex - 1)
+            // Overlay con controles
+            if isShowingControls {
+                VStack {
+                    Spacer()
+                    HStack(spacing: 30) {
+                        if currentSegmentIndex > 0 {
+                            ControlButton(icon: "arrow.left") {
+                                currentSegmentIndex -= 1
+                                playCurrentSegment()
+                            }
+                        }
+                        ControlButton(icon: "gobackward") {
+                            playCurrentSegment()
+                        }
+                        if currentSegmentIndex < segments.count - 1 {
+                            ControlButton(icon: "arrow.right") {
+                                currentSegmentIndex += 1
+                                playCurrentSegment()
+                            }
                         }
                     }
-                    Button("Repetir") {
-                        goToSegment(currentSegmentIndex)
-                    }
-                    if currentSegmentIndex < segments.count - 1 {
-                        Button("Siguiente") {
-                            goToSegment(currentSegmentIndex + 1)
-                        }
-                    }
-                    Button("Salir") {
-                        dismiss()
-                    }
+                    .padding(.bottom, 120)
+                }
+            }
+
+            // Parte inferior con pasos y tip
+            VStack {
+                Spacer()
+                VStack(spacing: 12) {
+                    SegmentStepperView(
+                        total: segments.count,
+                        currentIndex: currentSegmentIndex,
+                        color: gymColor
+                    )
+                    Text(segments[currentSegmentIndex].tip)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal)
                 }
                 .padding()
                 .background(Color.black.opacity(0.7))
-                .cornerRadius(12)
-            }
-
-            if !segments.isEmpty {
-                VStack(spacing: 16) {
-                    Spacer()
-
-                    AnimatedAutoSizingText(
-                        text: segments[currentSegmentIndex].tip,
-                        font: .title3,
-                        fontWeight: .medium,
-                        color: .white
-                    )
-
-                    SegmentedProgressBar(
-                        segmentCount: segments.count,
-                        currentIndex: currentSegmentIndex,
-                        progressValues: segmentProgress
-                    )
-                    .frame(height: 8)
-                    .padding(.bottom, 30)
-                }
             }
         }
         .onTapGesture {
-            guard isReady else { return }
-
-            if showButtons == false {
-                if currentSegmentIndex < segments.count - 1 {
-                    goToSegment(currentSegmentIndex + 1)
-                } else {
-                    userSawAllSegments = true
-                    dismiss()
+            if !isShowingControls {
+                isShowingControls = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    isShowingControls = false
                 }
             }
         }
     }
 
-    func setupPlayer() {
-        guard let url = URL(string: video.urlVideo) else { return }
-        player.replaceCurrentItem(with: AVPlayerItem(url: url))
+    func playCurrentSegment() {
+        let segment = segments[currentSegmentIndex]
+        player.seek(to: CMTime(seconds: segment.start, preferredTimescale: 600))
         player.play()
-        isReady = true
-
-        segmentProgress = Array(repeating: 0, count: segments.count)
-        monitorPlayback()
     }
 
-    func goToSegment(_ index: Int) {
-        guard index >= 0 && index < segments.count else { return }
-        currentSegmentIndex = index
-        let segment = segments[index]
-        player.seek(to: CMTime(milliseconds: segment.start))
-        player.play()
-        segmentRestartTrigger += 1
-        showButtons = false
-    }
-
-    func monitorPlayback() {
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-            guard isReady, segments.indices.contains(currentSegmentIndex) else { return }
+    func addPeriodicTimeObserver() {
+        let interval = CMTime(seconds: 0.3, preferredTimescale: 600)
+        player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { time in
+            let currentTime = time.seconds
             let segment = segments[currentSegmentIndex]
-            let currentTimeMs = player.currentTime().seconds * 1000
-            let segmentDuration = Double(segment.end - segment.start)
-            let segmentElapsed = max(0, currentTimeMs - Double(segment.start))
-
-            if segmentDuration > 0 {
-                segmentProgress[currentSegmentIndex] = min(CGFloat(segmentElapsed / segmentDuration), 1.0)
-            }
-
-            if currentTimeMs >= Double(segment.end) {
+            if currentTime >= segment.end {
                 player.pause()
-                showButtons = true
+                isShowingControls = true
+
                 if currentSegmentIndex == segments.count - 1 {
                     userSawAllSegments = true
+                    onAllSegmentsFinished()
                 }
             }
         }
     }
 }
 
-struct SegmentedProgressBar: View {
-    let segmentCount: Int
-    let currentIndex: Int
-    let progressValues: [CGFloat]
+struct ControlButton: View {
+    let icon: String
+    let action: () -> Void
 
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<segmentCount, id: \.self) { index in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .frame(height: 8)
-                        .foregroundColor(.gray.opacity(0.3))
-
-                    Capsule()
-                        .frame(width: CGFloat(progressValues[safe: index] ?? 0) * 100, height: 8)
-                        .foregroundColor(index == currentIndex ? .white : .gray)
-                }
-                .frame(maxWidth: .infinity)
-            }
+        Button(action: action) {
+            Image(systemName: icon)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 40, height: 40)
+                .foregroundColor(.white)
+                .padding()
+                .background(Color.black.opacity(0.6))
+                .clipShape(Circle())
         }
     }
 }
 
-struct AnimatedAutoSizingText: View {
-    let text: String
-    let font: Font
-    let fontWeight: Font.Weight
+struct SegmentStepperView: View {
+    let total: Int
+    let currentIndex: Int
     let color: Color
 
-    @State private var animate = false
-
     var body: some View {
-        Text(text)
-            .font(font)
-            .fontWeight(fontWeight)
-            .foregroundColor(color)
-            .multilineTextAlignment(.center)
-            .lineLimit(3)
-            .minimumScaleFactor(0.6)
-            .padding(.horizontal)
-            .id(text) // Needed for animation on change
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
-            .animation(.easeInOut(duration: 0.3), value: text)
-    }
-}
-
-extension CMTime {
-    init(milliseconds: Int64) {
-        self.init(seconds: Double(milliseconds) / 1000, preferredTimescale: 600)
+        HStack(spacing: 12) {
+            ForEach(0..<total, id: \..self) { index in
+                Circle()
+                    .fill(index <= currentIndex ? color : Color.gray)
+                    .frame(width: index == currentIndex ? 16 : 10, height: index == currentIndex ? 16 : 10)
+            }
+        }
     }
 }
