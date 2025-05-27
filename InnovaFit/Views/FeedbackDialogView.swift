@@ -19,14 +19,16 @@ struct FeedbackDialogView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("\u{1F4AC} Tu opinión importa")
-                .font(.title)
-                .fontWeight(.bold)
+        VStack(spacing: 24) {
+            VStack(spacing: 8){
+                Text("¡Tu opinión importa!")
+                    .font(.title)
+                    .fontWeight(.bold)
 
-            Text("Ayúdanos a mejorar InnovaFit")
-                .font(.subheadline)
-                .foregroundColor(.gray)
+                Text("Ayúdanos a mejorar InnovaFit")
+                    .font(.subheadline)
+                    .foregroundColor(.black)
+            }
 
             Text("1. ¿Qué tan claro fue el video?")
                 .fontWeight(.semibold)
@@ -53,16 +55,14 @@ struct FeedbackDialogView: View {
 
             Button(action: submitFeedback) {
                 Text("Enviar")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    //.background(Color(hex: gymColorHex))
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, minHeight: 48) // ancho completo y alto mínimo fijo
+                    .background(Color(hex: gymColorHex))
                     .foregroundColor(.black)
-                    .cornerRadius(8)
+                    .cornerRadius(12)
+                    .padding(.top, 8)
             }
 
-            Button("Cancelar") {
-                onDismiss()
-            }
             .foregroundColor(.gray)
         }
         .padding()
@@ -73,14 +73,21 @@ struct FeedbackDialogView: View {
 
     func submitFeedback() {
         let db = Firestore.firestore()
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.timeZone = TimeZone.current // o TimeZone(abbreviation: "UTC") si lo preferís
+        let readableTimestamp = formatter.string(from: Date())
+        
         let data: [String: Any] = [
-            "timestamp": Date().timeIntervalSince1970,
+            "timestamp": readableTimestamp,
             "rating": rating,
             "answer": selectedOption,
             "comment": comment,
-            "gymId": gymId
+            "gymId": gymId,
+            "os": "IOS"
         ]
-
+        
         db.collection("feedback").addDocument(data: data) { error in
             if error == nil {
                 onFeedbackSent()
@@ -125,4 +132,19 @@ struct OptionsSelectorView: View {
         }
     }
 }
+
+struct FeedbackDialogView_Previews: PreviewProvider {
+    static var previews: some View {
+        FeedbackDialogView(
+            gymId: "gym123",
+            gymColorHex: "#FDD535",
+            onDismiss: { print("Dismiss called") },
+            onFeedbackSent: { print("Feedback sent") }
+        )
+        .previewLayout(.sizeThatFits)
+        .padding()
+        .background(Color.gray.opacity(0.2))
+    }
+}
+
 

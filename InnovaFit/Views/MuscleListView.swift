@@ -76,15 +76,6 @@ struct MuscleWithName: Identifiable {
     let muscle: Muscle
 }
 
-
-func longestTextWidth(for items: [MuscleWithName], font: UIFont = UIFont.boldSystemFont(ofSize: 16)) -> CGFloat {
-    items.map { item in
-        let attributes: [NSAttributedString.Key: Any] = [.font: font]
-        return (item.name as NSString).size(withAttributes: attributes).width
-    }.max() ?? 0
-}
-
-
 struct MuscleListView_Previews: PreviewProvider {
     static var previews: some View {
         MuscleListView(

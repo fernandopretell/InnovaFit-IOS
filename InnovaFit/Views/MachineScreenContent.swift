@@ -1,22 +1,75 @@
 import SwiftUI
+import _SwiftData_SwiftUI
 import SDWebImageSwiftUI
 
 struct MachineScreenContent: View {
     let machine: Machine
     let gym: Gym
-
+    
+    @Query private var feedbackFlags: [ShowFeedback]
+    @AppStorage("hasWatchedAllVideos") var hasWatchedAllVideos: Bool = false
+    @Environment(\.modelContext) private var context
+    @State private var showFeedbackDialog = false
+    
+    @State private var showToast = false
+    
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                header
-                machineHeader
-                VideoCarouselView(videos: machine.defaultVideos, gymColor: gym.safeColor)
-                muscleTitle
-                MuscleListView(
-                    musclesWorked: machine.defaultVideos.first?.musclesWorked ?? [:],
-                    gymColor: Color(hex: gym.safeColor)
-                )
+        ZStack {
+            ScrollView {
+                VStack(spacing: 0) {
+                    header
+                    machineHeader
+                    VideoCarouselView(
+                        videos: machine.defaultVideos,
+                        gymColor: gym.safeColor,
+                        onVideoDismissed: handleVideoDismiss
+                    )
+                    muscleTitle
+                    MuscleListView(
+                        musclesWorked: machine.defaultVideos.first?.musclesWorked ?? [:],
+                        gymColor: Color(hex: gym.safeColor)
+                    )
+                }
+                .task(id: "\(hasWatchedAllVideos)-\(feedbackFlags.first?.isShowFeedback == true)") {
+                    print("🔁 Task triggered with hasWatchedAllVideos: \(hasWatchedAllVideos), feedbackFlags: \(feedbackFlags)")
+                    
+                    if shouldShowFeedback(feedbackFlags) {
+                        print("🎯 Triggering feedback dialog from .task")
+                        showFeedbackDialog = true
+                    }
+                }
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        if shouldShowFeedback(feedbackFlags) {
+                            showFeedbackDialog = true
+                        }
+                    }
+                    print("hasWatchedAllVideos:", hasWatchedAllVideos)
+                    print("feedbackFlags count:", feedbackFlags.count)
+                }
+                .sheet(isPresented: $showFeedbackDialog) {
+                    FeedbackDialogView(
+                        gymId: gym.id ?? "gym_001",
+                        gymColorHex: gym.safeColor,
+                        onDismiss: {
+                            dismissFeedback()
+                        },
+                        onFeedbackSent: {
+                            dismissFeedback()
+                        }
+                    )
+                }
             }
+        }
+        
+        if showToast {
+            VStack {
+                ToastView(message: "¡Gracias por tus comentarios!")
+                    .padding(.top, 50) // Ajusta según tu layout y safe area
+                Spacer()
+            }
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .zIndex(10)
         }
     }
 
@@ -61,7 +114,88 @@ struct MachineScreenContent: View {
                 .foregroundColor(Color.black)
         }
     }
+    
+    func handleVideoDismiss() {
+        print("↩️ Video dismiss detectado. hasWatchedAllVideos: \(hasWatchedAllVideos), flags: \(feedbackFlags)")
+        
+        if shouldShowFeedback(feedbackFlags) {
+            showFeedbackDialog = true
+        }
+    }
+    
+    private func shouldShowFeedback(_ flags: [ShowFeedback]) -> Bool {
+        return hasWatchedAllVideos && flags.first?.isShowFeedback != true
+    }
+    
+    func dismissFeedback() {
+        showFeedbackDialog = false
+
+        guard feedbackFlags.isEmpty else {
+            print("ℹ️ Feedback ya registrado previamente.")
+            return
+        }
+
+        let flag = ShowFeedback(isShowFeedback: true)
+        context.insert(flag)
+
+        do {
+            try context.save()
+            print("✅ Feedback marcado como mostrado en el dispositivo.")
+            
+            // Mostrar toast al guardar correctamente
+            withAnimation {
+                showToast = true
+            }
+            
+            // Ocultar toast automáticamente tras 2.5 segundos
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation {
+                    showToast = false
+                }
+            }
+            
+        } catch {
+            print("⚠️ Error al guardar ShowFeedback: \(error)")
+        }
+    }
 }
+
+struct RoundedBottomShape: Shape {
+    var radius: CGFloat = 30
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+
+        path.move(to: CGPoint(x: 0, y: 0))
+        path.addLine(to: CGPoint(x: rect.width, y: 0))
+        path.addLine(to: CGPoint(x: rect.width, y: rect.height - radius))
+        path.addQuadCurve(
+            to: CGPoint(x: 0, y: rect.height - radius),
+            control: CGPoint(x: rect.width / 2, y: rect.height + radius)
+        )
+        path.closeSubpath()
+
+        return path
+    }
+}
+
+struct ToastView: View {
+    let message: String
+    
+    var body: some View {
+        Text(message)
+            .font(.body)
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.black.opacity(0.8))
+            .cornerRadius(8)
+            .shadow(radius: 4)
+            .transition(.opacity.combined(with: .move(edge: .top)))
+            .zIndex(1)
+    }
+}
+
 
 struct MachineScreenContent_Previews: PreviewProvider {
     static var previews: some View {
@@ -93,25 +227,6 @@ struct MachineScreenContent_Previews: PreviewProvider {
         )
 
         MachineScreenContent(machine: machine, gym: gym)
-    }
-}
-
-struct RoundedBottomShape: Shape {
-    var radius: CGFloat = 30
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-
-        path.move(to: CGPoint(x: 0, y: 0))
-        path.addLine(to: CGPoint(x: rect.width, y: 0))
-        path.addLine(to: CGPoint(x: rect.width, y: rect.height - radius))
-        path.addQuadCurve(
-            to: CGPoint(x: 0, y: rect.height - radius),
-            control: CGPoint(x: rect.width / 2, y: rect.height + radius)
-        )
-        path.closeSubpath()
-
-        return path
     }
 }
 

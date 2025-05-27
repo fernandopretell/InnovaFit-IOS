@@ -11,6 +11,8 @@ struct VideoCarouselView: View {
     private let slideWidth = UIScreen.main.bounds.width * 0.6
     private let slideSpacing: CGFloat = 25
     
+    let onVideoDismissed: () -> Void
+    
     var loopedVideos: [Video] {
         guard let first = videos.first, let last = videos.last else { return [] }
         return [last] + videos + [first] // [último, reales..., primero]
@@ -105,13 +107,26 @@ struct VideoCarouselView: View {
             }
         }
         .frame(height: 348)
-        .sheet(item: $selectedVideo) { video in
-                    if (video.segments ?? []).isEmpty {
-                        VideoPlayerView(video: video)
-                    } else {
-                        SegmentedVideoPlayerView(video: video)
+        .fullScreenCover(item: $selectedVideo, onDismiss: {
+            // Callback hacia MachineScreenContent
+            onVideoDismissed()
+        }) { video in
+            if (video.segments ?? []).isEmpty {
+                VideoPlayerView(video: video)
+            } else {
+                SegmentedVideoPlayerView(
+                    video: video,
+                    gymColor: Color(hex: gymColor),
+                    onDismiss: {
+                        selectedVideo = nil // Asegura que se cierre
+                    },
+                    onAllSegmentsFinished: {
+                        // Si querés manejar algo adicional acá
                     }
-                }
+                )
+            }
+        }
+
     }
 }
 
@@ -127,7 +142,7 @@ struct VideoCarouselView_Previews: PreviewProvider {
         NavigationView {
             VideoCarouselView(
                 videos: PreviewFactory.sampleMachine.defaultVideos,
-                gymColor: PreviewFactory.sampleGym.color  ?? "#FDD835"
+                gymColor: PreviewFactory.sampleGym.color  ?? "#FDD835", onVideoDismissed: {}
             )
         }
     }
