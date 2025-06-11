@@ -62,6 +62,7 @@ struct MuscleListView: View {
 
         }
         .onChange(of: musclesWorked) { _ in
+            svgLoader.cancelAllTasks()
             svgLoader.images.removeAll()
             svgLoader.loadSVGs(muscles: sortedMuscles, gymColorHex: gymColor.toHex())
         }

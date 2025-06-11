@@ -6,6 +6,8 @@ import SwiftUI
 
 class SVGImageLoader: ObservableObject {
     @Published var images: [String: UIImage] = [:]
+    /// Keeps references to the tasks loading each SVG so they can be cancelled
+    private var tasks: [String: Task<Void, Never>] = [:]
 
     /// Fetches the SVG text from the given url using `URLSession` so that
     /// the request contains a default user agent. Some of the CDN endpoints
@@ -25,7 +27,7 @@ class SVGImageLoader: ObservableObject {
 
     func loadSVGs(muscles: [MuscleWithName], gymColorHex: String) {
         let maxWeight = muscles.map { Double($0.muscle.weight) }.max() ?? 1.0
-        
+
         for muscle in muscles {
             guard let url = URL(string: muscle.muscle.icon) else {
                 print("⚠️ URL inválida para \(muscle.name): \(muscle.muscle.icon)")
@@ -35,7 +37,7 @@ class SVGImageLoader: ObservableObject {
             let normalizedOpacity = max(0.2, min(1.0, Double(muscle.muscle.weight) / maxWeight))
             let opacityString = String(format: "%.2f", normalizedOpacity)
 
-            Task.detached { [weak self] in
+            let task = Task.detached { [weak self] in
                 guard let self = self else {
                     print("❗️ self es nil, abortando carga de SVG para \(muscle.name)")
                     return
@@ -145,9 +147,21 @@ class SVGImageLoader: ObservableObject {
                 } catch {
                     print("❌ Error procesando SVG para \(muscle.name) (\(url.lastPathComponent)): \(error.localizedDescription)")
                 }
-            } // Fin de Task.detached
+            }
+            tasks[muscle.name] = task
         } // Fin del bucle for
     } // Fin de la función
+
+    /// Cancels any ongoing SVG loading tasks
+    func cancelAllTasks() {
+        for (name, task) in tasks {
+            if !task.isCancelled {
+                task.cancel()
+                print("⛔️ Cancelled task for \(name)")
+            }
+        }
+        tasks.removeAll()
+    }
 
 }
 
