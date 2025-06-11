@@ -21,7 +21,7 @@ struct MuscleListView: View {
     
     var muscleIcons: some View {
         HStack(spacing: 32) {
-            ForEach(sortedMuscles.prefix(3)) { item in
+            ForEach(sortedMuscles) { item in
                 if let uiImage = svgLoader.images[item.name] {
                     Image(uiImage: uiImage)
                         .resizable()
