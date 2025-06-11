@@ -5,111 +5,99 @@ struct VideoCarouselView: View {
     
     let videos: [Video]
     let gymColor: String
+    var onVideoDismissed: ((Video) -> Void)? = nil
+    var onVideoChanged: ((Video) -> Void)? = nil
     
-    @State private var currentIndex: Int = 0 // Start from the first real slide
-    @State private var selectedVideo: Video? = nil
-    private let slideWidth = UIScreen.main.bounds.width * 0.6
-    private let slideSpacing: CGFloat = 25
+    @State private var scrollPosition: Int?
+    @State private var itemsArray: [[Video]] = []
+    @State private var selectedVideo: Video?
     
-    let onVideoDismissed: () -> Void
-    
-    var loopedVideos: [Video] {
-        guard let first = videos.first, let last = videos.last else { return [] }
-        return [last] + videos + [first] // [último, reales..., primero]
-    }
+    private let animationDuration: CGFloat = 0.3
+    private let animation: Animation = .default
     
     var body: some View {
         
-        ZStack(alignment: .center) {
-            GeometryReader { geometry in
-                    let totalHeight = geometry.size.height
-
-                    VStack(spacing: 0) {
-                        Color(hex: gymColor)
-                            .frame(height: totalHeight * 0.3) // 30% del alto disponible
-
-                        Color.black
-                            .frame(height: totalHeight * 0.01) // 2%
-
-                        Color.white
-                            .frame(height: totalHeight * 0.69) // 68%
-                    }
-                    .edgesIgnoringSafeArea(.all) // opcional
-            }
-            .frame(maxWidth: .infinity)
+        let screenWidth = UIScreen.main.bounds.width
+        let cardWidth: CGFloat = 180
+        let cardHeight: CGFloat = 220
+        let containerHeight = cardHeight * 1.3
+        let widthDifference = screenWidth - cardWidth
+        
+        ZStack(alignment: .top) {
+            Color.clear.frame(height: cardHeight)
+                .clipped()
             
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: slideSpacing) {
-                        ForEach(videos.indices, id: \.self) { index in
-                            ZStack {
-                                WebImage(url: URL(string: videos[index].cover))
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: slideWidth, height: 300)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(Color.black, lineWidth: 7)
-                                    )
-                                
-                                Button {
-                                    selectedVideo = videos[index]
-                                } label: {                                    ZStack {
-                                        // Play icono centrado
-                                        ZStack {
-                                            Image("icon_play")
-                                                .resizable()
-                                                .frame(width: 60, height: 60)
-                                        }
-                                        
-                                        // Texto en parte inferior
-                                        VStack {
-                                            Spacer()
-                                            
-                                            Text(videos[index].title)
-                                                .font(.system(size: 16, weight: .bold))
-                                                .foregroundColor(Color(hex: gymColor))
-                                                .padding(.horizontal, 12)
-                                                .padding(.vertical, 6)
-                                                .background(Color.black)
-                                                .cornerRadius(12)
-                                                .padding(.bottom, 16)
-                                        }
-                                    }
-                                    .frame(width: slideWidth, height: 310)
-                                }
-                            }
-                            .id(index)
-                        }
-                    }
-                    .padding(.horizontal, (UIScreen.main.bounds.width - slideWidth) / 2)
-                    .background(GeometryReader { geo in
-                        Color.clear.preference(
-                            key: ScrollOffsetKey.self,
-                            value: geo.frame(in: .global).minX
-                        )
-                    })
-                }
-                .onPreferenceChange(ScrollOffsetKey.self) { offset in
-                    // Cálculo del índice del slide visible
-                    let totalSlideWidth = slideWidth + slideSpacing
-                    let centerOffset = offset - (UIScreen.main.bounds.width - slideWidth) / 2
-                    let newIndex = Int(round(-centerOffset / totalSlideWidth))
+            // FONDO DE COLORES
+            VStack(spacing: 0) {
+                Color(hex: gymColor)
+                    .frame(height: containerHeight * 0.3)
+                
+                Color.black
+                    .frame(height: containerHeight * 0.01)
+                
+                Color.white
+                    .frame(height: containerHeight * 0.69)
+            }
+            .frame(height: containerHeight)
+            
+            let flatVideos: [Video] = itemsArray.flatMap { $0 }
+            let itemCount = videos.count
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
                     
-                    if newIndex != currentIndex && newIndex >= 0 && newIndex < videos.count {
-                        currentIndex = newIndex
-                        withAnimation {
-                            proxy.scrollTo(currentIndex, anchor: .center)
-                        }
+                    ForEach(flatVideos.indices, id: \.self) { index in
+                        let video = flatVideos[index]
+                        let isFocused = index == scrollPosition
+                        
+                        VideoCardView(
+                            video: video,
+                            isFocused: isFocused,
+                            gymColor: gymColor,
+                            pageWidth: cardWidth,
+                            pageHeight: cardHeight,
+                            onTap: {
+                                selectedVideo = video
+                            }
+                        )
+                        .padding(.horizontal, (widthDifference)/2)
+                        .offset(x: (index == scrollPosition) ? 0 : (index < scrollPosition ?? flatVideos.count) ? widthDifference*0.75 : -widthDifference*0.75)
                     }
+                }
+                .scrollTargetLayout()
+            }
+            .frame(height: containerHeight)
+            .scrollPosition(id: $scrollPosition, anchor: .center)
+            .scrollIndicators(.hidden)
+            .scrollTargetBehavior(.paging)
+            .onAppear {
+                self.itemsArray = [videos, videos, videos]
+                scrollPosition = itemCount
+            }
+            .onChange(of: scrollPosition) { newScroll in
+                guard let scroll = newScroll else { return }
+                
+                if scroll / itemCount == 0 && scroll % itemCount == itemCount - 1 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
+                        itemsArray.removeLast()
+                        itemsArray.insert(videos, at: 0)
+                        scrollPosition = scroll + itemCount
+                    }
+                } else if scroll / itemCount == 2 && scroll % itemCount == 0 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
+                        itemsArray.removeFirst()
+                        itemsArray.append(videos)
+                        scrollPosition = scroll - itemCount
+                    }
+                }
+                
+                if flatVideos.indices.contains(scroll) {
+                    onVideoChanged?(flatVideos[scroll])
                 }
             }
         }
-        .frame(height: 348)
         .fullScreenCover(item: $selectedVideo, onDismiss: {
-            // Callback hacia MachineScreenContent
-            onVideoDismissed()
+            onVideoDismissed?(selectedVideo!)
         }) { video in
             if (video.segments ?? []).isEmpty {
                 VideoPlayerView(video: video)
@@ -118,22 +106,70 @@ struct VideoCarouselView: View {
                     video: video,
                     gymColor: Color(hex: gymColor),
                     onDismiss: {
-                        selectedVideo = nil // Asegura que se cierre
+                        selectedVideo = nil
                     },
                     onAllSegmentsFinished: {
-                        // Si querés manejar algo adicional acá
+                        // Acciones opcionales
                     }
                 )
             }
         }
-
     }
 }
 
-struct ScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
+struct VideoCardView: View {
+    let video: Video
+    let isFocused: Bool
+    let gymColor: String
+    let pageWidth: CGFloat
+    let pageHeight: CGFloat
+    let onTap: () -> Void
+    
+    var body: some View {
+        ZStack {
+            WebImage(url: URL(string: video.cover))
+                .resizable()
+                .scaledToFill()
+                .frame(width: pageWidth, height: isFocused ? pageHeight * 1.2 : pageHeight)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.black, lineWidth: 7)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            
+            // Play icono centrado con acción
+            Button(action: {
+                onTap()
+            }) {
+                ZStack {
+                    Image("icon_play")
+                        .resizable()
+                        .frame(width: 50, height: 50)
+                        .foregroundColor(Color(hex: gymColor))
+                }
+            }
+            .buttonStyle(.plain) // ← evita efecto azul por defecto
+            
+            
+            // Texto en parte inferior
+            VStack {
+                Spacer()
+                
+                Text(video.title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(Color(hex: gymColor))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.black)
+                    .cornerRadius(12)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: pageWidth - 32) // ⬅️ deja 16pt a cada lado como margen visual
+                    .padding(.bottom, 16)
+            }
+            .frame(width: pageWidth, height: isFocused ? pageHeight * 1.2 : pageHeight)
+        }
     }
 }
 
@@ -142,7 +178,9 @@ struct VideoCarouselView_Previews: PreviewProvider {
         NavigationView {
             VideoCarouselView(
                 videos: PreviewFactory.sampleMachine.defaultVideos,
-                gymColor: PreviewFactory.sampleGym.color  ?? "#FDD835", onVideoDismissed: {}
+                gymColor: PreviewFactory.sampleGym.color  ?? "#FDD835",
+                onVideoDismissed: {_ in },
+                onVideoChanged: {_ in }
             )
         }
     }

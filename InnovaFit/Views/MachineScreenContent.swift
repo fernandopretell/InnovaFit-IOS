@@ -12,6 +12,13 @@ struct MachineScreenContent: View {
     @State private var showFeedbackDialog = false
     
     @State private var showToast = false
+    @State private var selectedVideo: Video?
+    
+    init(machine: Machine, gym: Gym) {
+        self.machine = machine
+        self.gym = gym
+        _selectedVideo = State(initialValue: machine.defaultVideos.first)
+    }    
     
     var body: some View {
         ZStack {
@@ -22,11 +29,15 @@ struct MachineScreenContent: View {
                     VideoCarouselView(
                         videos: machine.defaultVideos,
                         gymColor: gym.safeColor,
-                        onVideoDismissed: handleVideoDismiss
+                        onVideoDismissed: { _ in handleVideoDismiss() },
+                        onVideoChanged: { video in
+                            selectedVideo = video
+                        }
                     )
                     muscleTitle
+
                     MuscleListView(
-                        musclesWorked: machine.defaultVideos.first?.musclesWorked ?? [:],
+                        musclesWorked: selectedVideo?.musclesWorked ?? [:],
                         gymColor: Color(hex: gym.safeColor)
                     )
                 }
@@ -39,6 +50,11 @@ struct MachineScreenContent: View {
                     }
                 }
                 .onAppear {
+                    // ✅ Inicializar al cargar la vista
+                    if selectedVideo == nil {
+                        selectedVideo = machine.defaultVideos.first
+                    }
+                    
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         if shouldShowFeedback(feedbackFlags) {
                             showFeedbackDialog = true

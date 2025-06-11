@@ -55,6 +55,9 @@ struct MuscleListView: View {
         }
         .padding()
         .onAppear {
+            print("🧠 MuscleListView - Recibido musclesWorked:")
+                musclesWorked.forEach { print("🔸 \($0.key): \($0.value.icon)") }
+            
             svgLoader.loadSVGs(muscles: sortedMuscles, gymColorHex: gymColor.toHex())
 
         }
