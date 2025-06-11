@@ -6,7 +6,23 @@ import SwiftUI
 
 class SVGImageLoader: ObservableObject {
     @Published var images: [String: UIImage] = [:]
-    
+
+    /// Fetches the SVG text from the given url using `URLSession` so that
+    /// the request contains a default user agent. Some of the CDN endpoints
+    /// used in the project return a `403` response when using
+    /// `String(contentsOf:)` which internally relies on a simple data task
+    /// without these headers. Using `URLSession` avoids that restriction.
+    private func fetchSVGText(from url: URL) async throws -> String {
+        var request = URLRequest(url: url)
+        request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw URLError(.cannotDecodeContentData)
+        }
+        return text
+    }
+
     func loadSVGs(muscles: [MuscleWithName], gymColorHex: String) {
         let maxWeight = muscles.map { Double($0.muscle.weight) }.max() ?? 1.0
         
@@ -15,18 +31,18 @@ class SVGImageLoader: ObservableObject {
                 print("⚠️ URL inválida para \(muscle.name): \(muscle.muscle.icon)")
                 continue
             }
-            
+
             let normalizedOpacity = max(0.2, min(1.0, Double(muscle.muscle.weight) / maxWeight))
             let opacityString = String(format: "%.2f", normalizedOpacity)
-            
-            DispatchQueue.global().async(execute: { [weak self] in // Captura weak de self
-                guard let self = self else { // Asegura que self exista
+
+            Task.detached { [weak self] in
+                guard let self = self else {
                     print("❗️ self es nil, abortando carga de SVG para \(muscle.name)")
                     return
                 }
-                
+
                 do {
-                    let svgText = try String(contentsOf: url, encoding: .utf8)
+                    let svgText = try await self.fetchSVGText(from: url)
                     var stage1Svg = svgText
                     
                     // 1. Reemplazar el color base fill="#ff004f" (o el que sea) por gymColorHex
@@ -129,7 +145,7 @@ class SVGImageLoader: ObservableObject {
                 } catch {
                     print("❌ Error procesando SVG para \(muscle.name) (\(url.lastPathComponent)): \(error.localizedDescription)")
                 }
-            }) // Fin de DispatchQueue.global().async
+            } // Fin de Task.detached
         } // Fin del bucle for
     } // Fin de la función
 
