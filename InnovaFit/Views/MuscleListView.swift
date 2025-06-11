@@ -57,11 +57,15 @@ struct MuscleListView: View {
         .onAppear {
             print("🧠 MuscleListView - Recibido musclesWorked:")
                 musclesWorked.forEach { print("🔸 \($0.key): \($0.value.icon)") }
-            
+
             svgLoader.loadSVGs(muscles: sortedMuscles, gymColorHex: gymColor.toHex())
 
         }
-        
+        .onChange(of: musclesWorked) { _ in
+            svgLoader.images.removeAll()
+            svgLoader.loadSVGs(muscles: sortedMuscles, gymColorHex: gymColor.toHex())
+        }
+
     }
 }
 
