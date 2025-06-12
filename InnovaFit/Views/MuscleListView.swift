@@ -56,12 +56,19 @@ struct MuscleListView: View {
         .padding()
         .onAppear {
             print("🧠 MuscleListView - Recibido musclesWorked:")
-                musclesWorked.forEach { print("🔸 \($0.key): \($0.value.icon)") }
+            musclesWorked.forEach { key, value in
+                print("🔸 \(key): \(value.icon)")
+            }
 
             svgLoader.loadSVGs(muscles: sortedMuscles, gymColorHex: gymColor.toHex())
 
         }
-        .onChange(of: musclesWorked) { _ in
+        .onChange(of: musclesWorked) { newMuscles in
+            print("🔄 MuscleListView - musclesWorked actualizado:")
+            newMuscles.forEach { key, value in
+                print("🔸 \(key): \(value.icon)")
+            }
+
             svgLoader.images.removeAll()
             svgLoader.loadSVGs(muscles: sortedMuscles, gymColorHex: gymColor.toHex())
         }
