@@ -2,12 +2,14 @@ import SwiftUI
 import SDWebImageSwiftUI
 
 struct VideoCarouselView: View {
-    
+
     let videos: [Video]
     let gymColor: String
     var onVideoDismissed: ((Video) -> Void)? = nil
     var onVideoChanged: ((Video) -> Void)? = nil
-    
+
+    internal let inspection = Inspection<Self>()
+
     @State private var scrollPosition: Int?
     @State private var itemsArray: [[Video]] = []
     @State private var selectedVideo: Video?
@@ -114,6 +116,7 @@ struct VideoCarouselView: View {
                 )
             }
         }
+        .onReceive(inspection.notice) { inspection.visit(self, $0) }
     }
 }
 
