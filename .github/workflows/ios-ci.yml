@@ -19,6 +19,15 @@ jobs:
 
       - name: Dar permisos de ejecución al script
         run: chmod +x ./run_tests.sh
+        
+      - name: 📂 Mostrar estructura del repositorio
+        run: |
+          echo "Contenido en la raíz del repositorio:"
+          ls -l
+          echo "Contenido dentro de InnovaFit:"
+          ls -l InnovaFit || echo "❌ No existe carpeta 'InnovaFit'"
+          echo "Contenido dentro de InnovaFit.xcodeproj:"
+          ls -l InnovaFit.xcodeproj || echo "❌ No existe 'InnovaFit.xcodeproj'"
 
       - name: Ejecutar pruebas
         run: ./run_tests.sh
