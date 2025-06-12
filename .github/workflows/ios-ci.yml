@@ -1,4 +1,4 @@
-∑name: iOS CI
+name: iOS CI
 
 on:
   push:
