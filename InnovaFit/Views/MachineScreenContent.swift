@@ -31,6 +31,10 @@ struct MachineScreenContent: View {
                         gymColor: gym.safeColor,
                         onVideoDismissed: { _ in handleVideoDismiss() },
                         onVideoChanged: { video in
+                            print("🎞️ onVideoChanged -> \(video.title)")
+                            video.musclesWorked.forEach { key, value in
+                                print("   - \(key): \(value.icon)")
+                            }
                             selectedVideo = video
                         }
                     )
@@ -53,6 +57,12 @@ struct MachineScreenContent: View {
                     // ✅ Inicializar al cargar la vista
                     if selectedVideo == nil {
                         selectedVideo = machine.defaultVideos.first
+                        if let video = selectedVideo {
+                            print("🆗 selectedVideo inicial: \(video.title)")
+                            video.musclesWorked.forEach { key, value in
+                                print("   - \(key): \(value.icon)")
+                            }
+                        }
                     }
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -74,6 +84,16 @@ struct MachineScreenContent: View {
                             dismissFeedback()
                         }
                     )
+                }
+                .onChange(of: selectedVideo) { newVideo in
+                    if let video = newVideo {
+                        print("📹 MachineScreenContent - selectedVideo cambiado: \(video.title)")
+                        video.musclesWorked.forEach { key, value in
+                            print("   - \(key): \(value.icon)")
+                        }
+                    } else {
+                        print("📹 MachineScreenContent - selectedVideo es nil")
+                    }
                 }
             }
         }
