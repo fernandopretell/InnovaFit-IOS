@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct Video: Identifiable, Codable {
+struct Video: Identifiable, Codable, Equatable {
     var id: String = UUID().uuidString // o usar el id real si viene de Firestore
     let title: String
     let urlVideo: String
@@ -16,6 +16,10 @@ struct Video: Identifiable, Codable {
     enum CodingKeys: String, CodingKey {
             case title, urlVideo, cover, musclesWorked, segments
         }
+
+    static func == (lhs: Video, rhs: Video) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 
