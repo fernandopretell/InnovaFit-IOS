@@ -21,9 +21,8 @@ jobs:
         run: chmod +x ./run_tests.sh
 
       - name: Ejecutar pruebas
-        run: |
-          cd InnovaFit
-          ../run_tests.sh
+        run: ./run_tests.sh
+
 
 
 
