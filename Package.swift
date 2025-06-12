@@ -6,6 +6,9 @@ let package = Package(
     platforms: [
         .iOS(.v17)
     ],
+    dependencies: [
+        .package(url: "https://github.com/nalexn/ViewInspector", from: "0.9.8")
+    ],
     targets: [
         .executableTarget(
             name: "InnovaFit",
@@ -13,8 +16,11 @@ let package = Package(
         ),
         .testTarget(
             name: "InnovaFitTests",
-            dependencies: ["InnovaFit"],
-            path: "InnovaFitTests"
+            dependencies: ["InnovaFit", "ViewInspector"],
+            path: "InnovaFitTests",
+            resources: [
+                .copy("Resources")
+            ]
         )
     ]
 )
