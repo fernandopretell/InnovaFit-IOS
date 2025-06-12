@@ -2,7 +2,7 @@
 set -e
 
 xcodebuild clean test \
-  -project InnovaFit.xcodeproj \
+  -project InnovaFit/InnovaFit.xcodeproj \
   -scheme InnovaFit \
   -destination "platform=iOS Simulator,name=iPhone 15"
 
