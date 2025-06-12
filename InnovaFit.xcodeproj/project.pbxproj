@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		DE7888952DFA69E40027B60D /* run_tests.sh in Resources */ = {isa = PBXBuildFile; fileRef = DE7888942DFA69D60027B60D /* run_tests.sh */; };
 		DE7888972DFA6A1E0027B60D /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = DE7888962DFA6A170027B60D /* README.md */; };
+		DE7888992DFA6C460027B60D /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = DE7888982DFA6C3F0027B60D /* .gitignore */; };
 		DE9138B02DDFF11D00953143 /* SVGKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE9138AF2DDFF11D00953143 /* SVGKit */; };
 		DE9138B22DDFF11D00953143 /* SVGKitSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DE9138B12DDFF11D00953143 /* SVGKitSwift */; };
 		DE9BF5BD2DDE6ECB00094A0D /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = DE9BF5BC2DDE6ECB00094A0D /* FirebaseAnalytics */; };
@@ -39,6 +40,7 @@
 /* Begin PBXFileReference section */
 		DE7888942DFA69D60027B60D /* run_tests.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = run_tests.sh; sourceTree = "<group>"; };
 		DE7888962DFA6A170027B60D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		DE7888982DFA6C3F0027B60D /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		DE9BF5862DDE564400094A0D /* InnovaFit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InnovaFit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE9BF5952DDE564700094A0D /* InnovaFitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InnovaFitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE9BF59F2DDE564700094A0D /* InnovaFitUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InnovaFitUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -58,6 +60,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		DE78889A2DFA6EC60027B60D /* .github */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = .github;
+			sourceTree = "<group>";
+		};
 		DE9BF5882DDE564400094A0D /* InnovaFit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -114,6 +121,8 @@
 		DE9BF57D2DDE564400094A0D = {
 			isa = PBXGroup;
 			children = (
+				DE78889A2DFA6EC60027B60D /* .github */,
+				DE7888982DFA6C3F0027B60D /* .gitignore */,
 				DE7888962DFA6A170027B60D /* README.md */,
 				DE7888942DFA69D60027B60D /* run_tests.sh */,
 				DE9BF5882DDE564400094A0D /* InnovaFit */,
@@ -149,6 +158,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
+				DE78889A2DFA6EC60027B60D /* .github */,
 				DE9BF5882DDE564400094A0D /* InnovaFit */,
 			);
 			name = InnovaFit;
@@ -269,6 +279,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DE7888992DFA6C460027B60D /* .gitignore in Resources */,
 				DE7888952DFA69E40027B60D /* run_tests.sh in Resources */,
 				DE7888972DFA6A1E0027B60D /* README.md in Resources */,
 			);
