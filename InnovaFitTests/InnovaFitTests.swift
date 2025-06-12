@@ -5,13 +5,11 @@
 //  Created by Fernando Pretell Lozano on 21/05/25.
 //
 
-import Testing
+import XCTest
 @testable import InnovaFit
 
-struct InnovaFitTests {
-
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+final class InnovaFitTests: XCTestCase {
+    func testExample() {
+        XCTAssertEqual(2 + 2, 4)
     }
-
 }
