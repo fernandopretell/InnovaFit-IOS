@@ -1,0 +1,36 @@
+# Xcode
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+*.xcodeproj/xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/xcode/package.xcworkspace/
+
+# User-specific
+.DS_Store
+.idea/
+*.moved-aside
+*.swp
+*~.nib
+*.bak
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+
+# Logs
+*.log
+
+# Derived data
+DerivedData/
+build/
+*.ipa
+
+# Other
+Pods/
+
