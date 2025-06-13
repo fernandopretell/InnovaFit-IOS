@@ -1,11 +1,14 @@
 import Foundation
 import UIKit
-import SVGKit
+@preconcurrency import SVGKit
 import SwiftUI
 
 
 class SVGImageLoader: ObservableObject {
+    
     @Published var images: [String: UIImage] = [:]
+    private var currentTasks: [String: Task<Void, Never>] = [:]
+
 
     /// Fetches the SVG text from the given url using `URLSession` so that
     /// the request contains a default user agent. Some of the CDN endpoints
@@ -25,7 +28,10 @@ class SVGImageLoader: ObservableObject {
 
     func loadSVGs(muscles: [MuscleWithName], gymColorHex: String) {
         let maxWeight = muscles.map { Double($0.muscle.weight) }.max() ?? 1.0
-        
+
+        currentTasks.values.forEach { $0.cancel() }
+        currentTasks.removeAll()
+
         for muscle in muscles {
             guard let url = URL(string: muscle.muscle.icon) else {
                 print("⚠️ URL inválida para \(muscle.name): \(muscle.muscle.icon)")
@@ -35,120 +41,78 @@ class SVGImageLoader: ObservableObject {
             let normalizedOpacity = max(0.2, min(1.0, Double(muscle.muscle.weight) / maxWeight))
             let opacityString = String(format: "%.2f", normalizedOpacity)
 
-            Task.detached { [weak self] in
-                guard let self = self else {
-                    print("❗️ self es nil, abortando carga de SVG para \(muscle.name)")
-                    return
-                }
+            let task = Task { @MainActor in
+                guard !Task.isCancelled else { return }
 
                 do {
-                    let svgText = try await self.fetchSVGText(from: url)
+                    let svgText = try await fetchSVGText(from: url)
                     var stage1Svg = svgText
-                    
-                    // 1. Reemplazar el color base fill="#ff004f" (o el que sea) por gymColorHex
-                    //    Asegúrate que "#ff004f" es el color correcto a reemplazar globalmente si esa es la intención.
-                    let baseFillColorToReplace = "#ff004f" // Puedes hacerlo una constante o parámetro si varía
+
+                    let baseFillColorToReplace = "#ff004f"
                     if let fillRegex = try? NSRegularExpression(pattern: "fill\\s*=\\s*\"\(baseFillColorToReplace)\"", options: .caseInsensitive) {
                         let fillRange = NSRange(location: 0, length: stage1Svg.utf16.count)
                         stage1Svg = fillRegex.stringByReplacingMatches(in: stage1Svg, options: [], range: fillRange, withTemplate: "fill=\"\(gymColorHex)\"")
                     }
 
-                    // 2. Modificar/Añadir fill-opacity a los paths que AHORA tienen gymColorHex
                     var finalSvgString = ""
                     var currentIndex = stage1Svg.startIndex
-                    
-                    // Regex para encontrar etiquetas <path ... > que contienen el fill="gymColorHex"
-                    // Usamos (.|\n|\r) en [^>]* para que pueda manejar saltos de línea dentro de la etiqueta path si los hubiera.
-                    // Hacemos que [^>]* sea no codicioso (*?) para evitar que consuma más de una etiqueta si están juntas y malformadas.
-                    _ = "<path\\b([^>]*)fill=\\\"\(gymColorHex)\\\"[^>]*?>"
-                    // Nota: El patrón anterior es para etiquetas que terminan en ">". Para "/>" se necesitaría un patrón más complejo o un post-procesamiento.
-                    // Un patrón más general pero más complejo de manejar podría ser: <path\b((?:.|\n|\r)*?)>
-                    // Vamos a simplificar asumiendo que la estructura de path es relativamente estándar.
-                    // Este regex encontrará la etiqueta path completa que contenga el fill correcto.
-                    
-                    // Regex mejorado para capturar toda la etiqueta <path ...> o <path ... />
-                    let pathElementRegex = try NSRegularExpression(pattern: "<path\\b(?:[^>]*?fill=\\\"\(gymColorHex)\\\"[^>]*?)>", options: [.caseInsensitive, .dotMatchesLineSeparators])
 
+                    let pathElementRegex = try NSRegularExpression(pattern: "<path\\b(?:[^>]*?fill=\\\"\(gymColorHex)\\\"[^>]*?)>", options: [.caseInsensitive, .dotMatchesLineSeparators])
                     let fullSvgNsRange = NSRange(location: 0, length: stage1Svg.utf16.count)
 
-                    pathElementRegex.enumerateMatches(in: stage1Svg, options: [], range: fullSvgNsRange) { (match, _, stop) in
-                        guard let match = match, let matchRangeInOriginalSvg = Range(match.range, in: stage1Svg) else { return }
-                        
-                        // Añadir la parte del SVG antes de esta coincidencia
-                        finalSvgString.append(String(stage1Svg[currentIndex..<matchRangeInOriginalSvg.lowerBound]))
-                        
-                        let pathTagString = String(stage1Svg[matchRangeInOriginalSvg])
-                        var modifiedPathTagString = pathTagString
-                        
-                        // Buscar si fill-opacity ya existe en esta etiqueta path
-                        let opacityAttributePattern = "fill-opacity\\s*=\\s*\\\"[^\\\"]*\\\""
-                        let opacityRegex = try? NSRegularExpression(pattern: opacityAttributePattern, options: .caseInsensitive)
-                        
+                    pathElementRegex.enumerateMatches(in: stage1Svg, options: [], range: fullSvgNsRange) { (match, _, _) in
+                        guard let match = match, let matchRange = Range(match.range, in: stage1Svg) else { return }
+
+                        finalSvgString.append(String(stage1Svg[currentIndex..<matchRange.lowerBound]))
+
+                        var pathTagString = String(stage1Svg[matchRange])
+                        let opacityPattern = "fill-opacity\\s*=\\s*\\\"[^\\\"]*\\\""
+                        let opacityRegex = try? NSRegularExpression(pattern: opacityPattern, options: .caseInsensitive)
+
                         if let opacityRegex = opacityRegex,
-                           let existingOpacityAttrMatch = opacityRegex.firstMatch(in: modifiedPathTagString, options: [], range: NSRange(location: 0, length: modifiedPathTagString.utf16.count)),
-                           let rangeToReplace = Range(existingOpacityAttrMatch.range, in: modifiedPathTagString) {
-                            // fill-opacity existe, reemplazar su valor
-                            modifiedPathTagString.replaceSubrange(rangeToReplace, with: "fill-opacity=\"\(opacityString)\"")
+                           let existing = opacityRegex.firstMatch(in: pathTagString, options: [], range: NSRange(location: 0, length: pathTagString.utf16.count)),
+                           let range = Range(existing.range, in: pathTagString) {
+                            pathTagString.replaceSubrange(range, with: "fill-opacity=\"\(opacityString)\"")
                         } else {
-                            // fill-opacity no existe, añadirlo.
-                            // Intentar añadirlo antes del cierre '>' o '/>'
-                            if let lastChar = modifiedPathTagString.last {
-                                var insertionPoint: String.Index
-                                if lastChar == ">" {
-                                    let secondLastCharIndex = modifiedPathTagString.index(before: modifiedPathTagString.endIndex)
-                                    if secondLastCharIndex > modifiedPathTagString.startIndex && modifiedPathTagString[modifiedPathTagString.index(before: secondLastCharIndex)] == "/" { // Termina en "/>"
-                                        insertionPoint = modifiedPathTagString.index(before: secondLastCharIndex) // Antes de "/"
-                                    } else { // Termina en ">"
-                                        insertionPoint = modifiedPathTagString.index(before: modifiedPathTagString.endIndex) // Antes de ">"
-                                    }
-                                    modifiedPathTagString.insert(contentsOf: " fill-opacity=\"\(opacityString)\"", at: insertionPoint)
-                                } else {
-                                    // Etiqueta path malformada o no termina en '>', se añade al final (menos ideal)
-                                    print("⚠️ Etiqueta path no termina en '>' para \(muscle.name): \(pathTagString.prefix(100))")
-                                    modifiedPathTagString.append(" fill-opacity=\"\(opacityString)\"")
-                                }
-                            } else {
-                                 print("⚠️ Etiqueta path vacía o extraña para \(muscle.name): \(pathTagString)")
+                            if pathTagString.hasSuffix("/>") {
+                                let insertAt = pathTagString.index(pathTagString.endIndex, offsetBy: -2)
+                                pathTagString.insert(contentsOf: " fill-opacity=\"\(opacityString)\"", at: insertAt)
+                            } else if pathTagString.hasSuffix(">") {
+                                let insertAt = pathTagString.index(before: pathTagString.endIndex)
+                                pathTagString.insert(contentsOf: " fill-opacity=\"\(opacityString)\"", at: insertAt)
                             }
                         }
-                        
-                        finalSvgString.append(modifiedPathTagString)
-                        currentIndex = matchRangeInOriginalSvg.upperBound
+
+                        finalSvgString.append(pathTagString)
+                        currentIndex = matchRange.upperBound
                     }
-                    
-                    // Añadir la parte restante del SVG después de la última coincidencia
+
                     if currentIndex < stage1Svg.endIndex {
                         finalSvgString.append(String(stage1Svg[currentIndex...]))
                     }
-                    
-                    // Si no hubo ninguna coincidencia de 'path' con 'gymColorHex', finalSvgString podría estar vacío
-                    // o solo contener las partes iniciales. En ese caso, el SVG modificado es stage1Svg.
+
                     if pathElementRegex.numberOfMatches(in: stage1Svg, options: [], range: fullSvgNsRange) == 0 {
                         finalSvgString = stage1Svg
                     }
 
-                    print("SVG modificado para \(muscle.name) (\(url.lastPathComponent)):\n\(finalSvgString.prefix(300))") // Imprime solo una parte para no llenar la consola
-                    
                     guard let data = finalSvgString.data(using: .utf8),
-                          let svgImage = SVGKImage(data: data) else { // Asumiendo SVGKImage es la clase correcta
-                        print("❌ Error creando SVGKImage para \(muscle.name) (\(url.lastPathComponent))")
-                        // Si quieres ver el SVG que falló:
-                        // print("SVG que falló: \(finalSvgString)")
+                          let svgImage = SVGKImage(data: data) else {
+                        print("❌ Error creando SVGKImage para \(muscle.name)")
                         return
                     }
-                    
-                    DispatchQueue.main.async(execute: {
-                        self.images[muscle.name] = svgImage.uiImage // Asumiendo .uiImage es la propiedad correcta
-                        print("✅ Imagen SVG cargada y procesada para \(muscle.name) (\(url.lastPathComponent))")
-                    })
-                    
-                } catch {
-                    print("❌ Error procesando SVG para \(muscle.name) (\(url.lastPathComponent)): \(error.localizedDescription)")
-                }
-            } // Fin de Task.detached
-        } // Fin del bucle for
-    } // Fin de la función
 
+                    self.images[muscle.name] = svgImage.uiImage
+                    print("✅ Imagen SVG cargada para \(muscle.name)")
+                } catch {
+                    if !Task.isCancelled {
+                        print("❌ Error cargando SVG para \(muscle.name): \(error)")
+                    }
+                }
+            }
+
+            currentTasks[muscle.name] = task
+        }
+    }
 }
 
 extension SVGKImage {
@@ -200,3 +164,5 @@ extension Collection {
         indices.contains(index) ? self[index] : nil
     }
 }
+
+

@@ -13,6 +13,8 @@ struct MachineScreenContent: View {
     
     @State private var showToast = false
     @State private var selectedVideo: Video?
+    @StateObject private var svgLoader = SVGImageLoader()
+
     
     init(machine: Machine, gym: Gym) {
         self.machine = machine
@@ -21,93 +23,108 @@ struct MachineScreenContent: View {
     }    
     
     var body: some View {
-        ZStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    header
-                    machineHeader
-                    VideoCarouselView(
-                        videos: machine.defaultVideos,
-                        gymColor: gym.safeColor,
-                        onVideoDismissed: { _ in handleVideoDismiss() },
-                        onVideoChanged: { video in
-                            print("🎞️ onVideoChanged -> \(video.title)")
-                            video.musclesWorked.forEach { key, value in
-                                print("   - \(key): \(value.icon)")
+            ZStack {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        header
+                        machineHeader
+                        VideoCarouselView(
+                            videos: machine.defaultVideos,
+                            gymColor: gym.safeColor,
+                            onVideoDismissed: { _ in handleVideoDismiss() },
+                            onVideoChanged: { video in
+                                print("🎞️ onVideoChanged -> \(video.title)")
+                                video.musclesWorked.forEach { key, value in
+                                    print("   - \(key): \(value.icon)")
+                                }
+                                selectedVideo = video
                             }
-                            selectedVideo = video
+                        )
+                        .onChange(of: selectedVideo) { oldValue, newVideo in
+                            let loaderCopy = svgLoader
+                            if let video = newVideo {
+                                print("📹 MachineScreenContent - selectedVideo cambiado: \(video.title)")
+                                video.musclesWorked.forEach { key, value in
+                                    print("   - \(key): \(value.icon)")
+                                }
+                                loaderCopy.loadSVGs(
+                                    muscles: video.musclesWorked.map { (name, muscle) in
+                                        MuscleWithName(_id: name, name: name, muscle: muscle)
+                                    },
+                                    gymColorHex: gym.safeColor
+                                )
+                            } else {
+                                print("📹 MachineScreenContent - selectedVideo es nil")
+                            }
                         }
-                    )
-                    muscleTitle
 
-                    MuscleListView(
-                        musclesWorked: selectedVideo?.musclesWorked ?? [:],
-                        gymColor: Color(hex: gym.safeColor)
-                    )
-                }
-                .task(id: "\(hasWatchedAllVideos)-\(feedbackFlags.first?.isShowFeedback == true)") {
-                    print("🔁 Task triggered with hasWatchedAllVideos: \(hasWatchedAllVideos), feedbackFlags: \(feedbackFlags)")
-                    
-                    if shouldShowFeedback(feedbackFlags) {
-                        print("🎯 Triggering feedback dialog from .task")
-                        showFeedbackDialog = true
+                        muscleTitle
+
+                        MuscleListView(
+                            musclesWorked: selectedVideo?.musclesWorked ?? [:],
+                            gymColor: Color(hex: gym.safeColor),
+                            loader: svgLoader,
+                            videoId: selectedVideo?.id ?? ""
+                        )
                     }
-                }
-                .onAppear {
-                    // ✅ Inicializar al cargar la vista
-                    if selectedVideo == nil {
-                        selectedVideo = machine.defaultVideos.first
+                    .onAppear {
+                        if selectedVideo == nil {
+                            selectedVideo = machine.defaultVideos.first
+                        }
+
                         if let video = selectedVideo {
                             print("🆗 selectedVideo inicial: \(video.title)")
                             video.musclesWorked.forEach { key, value in
                                 print("   - \(key): \(value.icon)")
                             }
+                            svgLoader.loadSVGs(
+                                muscles: video.musclesWorked.map { (name, muscle) in
+                                    MuscleWithName(_id: name, name: name, muscle: muscle)
+                                },
+                                gymColorHex: gym.safeColor
+                            )
                         }
+
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            if shouldShowFeedback(feedbackFlags) {
+                                showFeedbackDialog = true
+                            }
+                        }
+                        print("hasWatchedAllVideos:", hasWatchedAllVideos)
+                        print("feedbackFlags count:", feedbackFlags.count)
                     }
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    .sheet(isPresented: $showFeedbackDialog) {
+                        FeedbackDialogView(
+                            gymId: gym.id ?? "gym_001",
+                            gymColorHex: gym.safeColor,
+                            onDismiss: {
+                                dismissFeedback()
+                            },
+                            onFeedbackSent: {
+                                dismissFeedback()
+                            }
+                        )
+                    }
+                    .task(id: "\(hasWatchedAllVideos)-\(feedbackFlags.first?.isShowFeedback == true)") {
+                        print("🔁 Task triggered with hasWatchedAllVideos: \(hasWatchedAllVideos), feedbackFlags: \(feedbackFlags)")
+
                         if shouldShowFeedback(feedbackFlags) {
                             showFeedbackDialog = true
                         }
                     }
-                    print("hasWatchedAllVideos:", hasWatchedAllVideos)
-                    print("feedbackFlags count:", feedbackFlags.count)
                 }
-                .sheet(isPresented: $showFeedbackDialog) {
-                    FeedbackDialogView(
-                        gymId: gym.id ?? "gym_001",
-                        gymColorHex: gym.safeColor,
-                        onDismiss: {
-                            dismissFeedback()
-                        },
-                        onFeedbackSent: {
-                            dismissFeedback()
-                        }
-                    )
-                }
-                .onChange(of: selectedVideo) { newVideo in
-                    if let video = newVideo {
-                        print("📹 MachineScreenContent - selectedVideo cambiado: \(video.title)")
-                        video.musclesWorked.forEach { key, value in
-                            print("   - \(key): \(value.icon)")
-                        }
-                    } else {
-                        print("📹 MachineScreenContent - selectedVideo es nil")
+
+                if showToast {
+                    VStack {
+                        ToastView(message: "¡Gracias por tus comentarios!")
+                            .padding(.top, 50) // Ajusta según tu layout y safe area
+                        Spacer()
                     }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(10)
                 }
             }
         }
-        
-        if showToast {
-            VStack {
-                ToastView(message: "¡Gracias por tus comentarios!")
-                    .padding(.top, 50) // Ajusta según tu layout y safe area
-                Spacer()
-            }
-            .transition(.move(edge: .top).combined(with: .opacity))
-            .zIndex(10)
-        }
-    }
 
     private var header: some View {
         ZStack(alignment: .center) {
