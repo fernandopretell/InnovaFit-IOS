@@ -2,6 +2,7 @@
 *.xcuserstate
 *.xcscmblueprint
 *.xccheckout
+*.xcbbkptlist
 *.xcworkspace/xcuserdata/
 *.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
 *.xcodeproj/project.xcworkspace/xcuserdata/
