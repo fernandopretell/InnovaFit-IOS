@@ -20,7 +20,7 @@ struct VideoCarouselView: View {
     var body: some View {
         
         let screenWidth = UIScreen.main.bounds.width
-        let cardWidth: CGFloat = 180
+        let cardWidth: CGFloat = 200
         let cardHeight: CGFloat = 220
         let containerHeight = cardHeight * 1.3
         let widthDifference = screenWidth - cardWidth
@@ -76,7 +76,7 @@ struct VideoCarouselView: View {
                 self.itemsArray = [videos, videos, videos]
                 scrollPosition = itemCount
             }
-            .onChange(of: scrollPosition) { newScroll in
+            .onChange(of: scrollPosition) { oldScroll, newScroll in
                 guard let scroll = newScroll else { return }
                 
                 if scroll / itemCount == 0 && scroll % itemCount == itemCount - 1 {
@@ -99,10 +99,14 @@ struct VideoCarouselView: View {
             }
         }
         .fullScreenCover(item: $selectedVideo, onDismiss: {
-            onVideoDismissed?(selectedVideo!)
+            if let video = selectedVideo {
+                onVideoDismissed?(video)
+            }
         }) { video in
             if (video.segments ?? []).isEmpty {
-                VideoPlayerView(video: video)
+                VideoPlayerView(video: video) {
+                    selectedVideo = nil
+                }
             } else {
                 SegmentedVideoPlayerView(
                     video: video,
