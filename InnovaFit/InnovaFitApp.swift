@@ -4,23 +4,51 @@ import FirebaseFirestore
 import SwiftData
 import FirebaseCore
 
-class AppDelegate: NSObject, UIApplicationDelegate {
-  func application(_ application: UIApplication,
-                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-    FirebaseApp.configure()
-    return true
-  }
+// MARK: - AppDelegate con soporte para Universal Links
+class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
+
+    @Published var pendingTag: String?
+
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        FirebaseApp.configure()
+        return true
+    }
+
+    func application(
+        _ application: UIApplication,
+        continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+    ) -> Bool {
+        guard
+            userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+            let url = userActivity.webpageURL,
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+            let tag = components.queryItems?.first(where: { $0.name == "tag" })?.value
+        else {
+            return false
+        }
+
+        print("🌐 Universal Link recibido con tag: \(tag)")
+
+        // ✅ Enviar el tag de forma reactiva
+        DispatchQueue.main.async {
+            self.pendingTag = tag
+        }
+
+        return true
+    }
 }
 
+// InnovaFitApp.swift
 
 @main
 struct InnovaFitApp: App {
 
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var viewModel = MachineViewModel()
-
-    init() {
-        FirebaseApp.configure()
-    }
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([ ShowFeedback.self ])
@@ -36,15 +64,11 @@ struct InnovaFitApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(viewModel: viewModel)
-                .onOpenURL { url in
-                    if let tag = URLComponents(url: url, resolvingAgainstBaseURL: true)?
-                        .queryItems?.first(where: { $0.name == "tag" })?.value {
-                        print("🎯 Tag recibido desde URL: \(tag)")
-                        viewModel.loadDataFromTag(tag)
-                    }
-                }
+                .environmentObject(appDelegate) // ✅ inject AppDelegate como EnvironmentObject
         }
         .modelContainer(sharedModelContainer)
     }
 }
+
+
 

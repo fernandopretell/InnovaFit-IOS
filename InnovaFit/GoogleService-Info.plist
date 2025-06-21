@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.fpretell.SmartGym</string>
+	<string>com.fpretell.innovafit</string>
 	<key>PROJECT_ID</key>
 	<string>nfc-gym</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1032237653586:ios:8c1ae4cebef384b9ab898b</string>
+	<string>1:1032237653586:ios:544e6ecdae7e1923ab898b</string>
 </dict>
 </plist>
