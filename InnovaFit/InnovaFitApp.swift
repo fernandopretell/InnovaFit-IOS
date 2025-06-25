@@ -13,6 +13,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        print("🚀 AppDelegate: aplicación lanzó")
         FirebaseApp.configure()
         return true
     }
@@ -22,6 +23,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         continue userActivity: NSUserActivity,
         restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
     ) -> Bool {
+        print("🔥 Recibida una NSUserActivity con tipo: \(userActivity.activityType)")
         guard
             userActivity.activityType == NSUserActivityTypeBrowsingWeb,
             let url = userActivity.webpageURL,
@@ -55,8 +57,10 @@ struct InnovaFitApp: App {
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
+            print("✅ ModelContainer creado correctamente.")
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
+            print("❌ Error al crear ModelContainer: \(error)")
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
@@ -64,11 +68,15 @@ struct InnovaFitApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(viewModel: viewModel)
+                .onAppear {
+                    print("🌀 ContentView aparece por primera vez")
+                }
                 .environmentObject(appDelegate) // ✅ inject AppDelegate como EnvironmentObject
         }
         .modelContainer(sharedModelContainer)
     }
 }
+
 
 
 
