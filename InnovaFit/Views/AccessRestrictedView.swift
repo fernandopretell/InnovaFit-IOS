@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AccessRestrictedSheet: View {
+struct AccessRestrictedView: View {
     var onDismiss: () -> Void
 
     var body: some View {

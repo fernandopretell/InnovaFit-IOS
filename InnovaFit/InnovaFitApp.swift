@@ -6,9 +6,9 @@ import FirebaseCore
 
 // MARK: - AppDelegate con soporte para Universal Links
 class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
-
+    
     @Published var pendingTag: String?
-
+    
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -17,30 +17,22 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         FirebaseApp.configure()
         return true
     }
-
-    func application(
-        _ application: UIApplication,
-        continue userActivity: NSUserActivity,
-        restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
-    ) -> Bool {
-        print("🔥 Recibida una NSUserActivity con tipo: \(userActivity.activityType)")
-        guard
-            userActivity.activityType == NSUserActivityTypeBrowsingWeb,
-            let url = userActivity.webpageURL,
-            let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-            let tag = components.queryItems?.first(where: { $0.name == "tag" })?.value
-        else {
-            return false
-        }
-
-        print("🌐 Universal Link recibido con tag: \(tag)")
-
-        // ✅ Enviar el tag de forma reactiva
-        DispatchQueue.main.async {
+    
+    func application(_ application: UIApplication,
+                     continue userActivity: NSUserActivity,
+                     restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+        
+        if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+           let url = userActivity.webpageURL,
+           let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+           let tag = components.queryItems?.first(where: { $0.name == "tag" })?.value {
+            
+            print("📲 AppDelegate recibió tag por Universal Link: \(tag)")
             self.pendingTag = tag
+            return true
         }
-
-        return true
+        
+        return false
     }
 }
 
