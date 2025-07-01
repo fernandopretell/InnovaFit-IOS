@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AccessRestrictedView: View {
-    var onDismiss: () -> Void
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 24) {
@@ -22,7 +22,7 @@ struct AccessRestrictedView: View {
                 .frame(maxWidth: 250)
                 .padding(.bottom, 16)
 
-            Button(action: onDismiss) {
+            Button(action: { dismiss() }) {
                 Text("Cerrar")
                     .foregroundColor(Color(hex: "#FDD835"))
                     .fontWeight(.bold)
