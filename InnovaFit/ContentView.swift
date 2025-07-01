@@ -5,6 +5,7 @@ struct ContentView: View {
     @EnvironmentObject var appDelegate: AppDelegate
 
     @State private var shouldNavigateToRestricted = false
+    @State private var showScanner = false
 
     var body: some View {
         NavigationStack {
@@ -34,9 +35,17 @@ struct ContentView: View {
             }
 
             .navigationDestination(isPresented: $shouldNavigateToRestricted) {
-                AccessRestrictedView {
-                    shouldNavigateToRestricted = false
-                    exit(0)
+                AccessRestrictedView()
+            }
+
+            .sheet(isPresented: $showScanner) {
+                QRScannerView { result in
+                    if let url = URL(string: result),
+                       let tag = URLComponents(url: url, resolvingAgainstBaseURL: true)?
+                        .queryItems?.first(where: { $0.name == "tag" })?.value {
+                        viewModel.loadDataFromTag(tag)
+                        showScanner = false
+                    }
                 }
             }
 
@@ -74,19 +83,13 @@ struct ContentView: View {
                     defaults.set(true, forKey: "hasLaunchedBefore")
                 }
 
-                // Intenta cargar desde el portapapeles si hay un tag válido
-                if viewModel.tag == nil,
-                   let clipboardTag = UIPasteboard.general.string,
-                   clipboardTag.starts(with: "tag_") {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        viewModel.loadDataFromTag(clipboardTag)
-                    }
-                    return
+                if !appDelegate.didLaunchViaUniversalLink {
+                    showScanner = true
                 }
 
                 // Espera hasta 4 segundos antes de redirigir
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                    if viewModel.tag == nil && !viewModel.isLoading {
+                    if viewModel.tag == nil && !viewModel.isLoading && !showScanner {
                         shouldNavigateToRestricted = true
                     }
                 }
