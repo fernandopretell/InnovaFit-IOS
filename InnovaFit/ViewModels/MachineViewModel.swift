@@ -7,11 +7,13 @@ class MachineViewModel: ObservableObject {
     @Published var tag: String?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var hasLoadedTag = false  // ✅ Nueva bandera
 
     func loadDataFromTag(_ tag: String) {
         self.tag = tag
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
+        self.hasLoadedTag = false  // ✅ Se reinicia al iniciar
 
         MachineLoader.resolveTag(tag: tag) { [weak self] gymId, machineId in
             guard let self = self else { return }
@@ -20,6 +22,7 @@ class MachineViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     self.errorMessage = "No se encontró el tag"
                     self.isLoading = false
+                    self.hasLoadedTag = false  // ❌ no cargó
                 }
                 return
             }
@@ -42,13 +45,13 @@ class MachineViewModel: ObservableObject {
             }
 
             group.notify(queue: .main) {
-                DispatchQueue.main.async {
-                    self.gym = loadedGym
-                    self.machine = loadedMachine
-                    self.isLoading = false
-                }
+                self.gym = loadedGym
+                self.machine = loadedMachine
+                self.isLoading = false
+                self.hasLoadedTag = loadedGym != nil && loadedMachine != nil  // ✅ sólo true si todo cargó bien
             }
         }
     }
 }
+
 
