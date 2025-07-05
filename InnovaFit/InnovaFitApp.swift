@@ -55,7 +55,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
 struct InnovaFitApp: App {
 
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @StateObject private var viewModel = MachineViewModel()
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([ ShowFeedback.self ])
@@ -72,7 +71,7 @@ struct InnovaFitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(viewModel: viewModel)
+            ContentView()
                 .onAppear {
                     print("🌀 ContentView aparece por primera vez")
                 }

@@ -5,6 +5,7 @@ class MachineViewModel: ObservableObject {
     @Published var gym: Gym?
     @Published var machine: Machine?
     @Published var tag: String?
+    @Published var machines: [Machine] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -47,6 +48,18 @@ class MachineViewModel: ObservableObject {
                     self.machine = loadedMachine
                     self.isLoading = false
                 }
+            }
+        }
+    }
+
+    /// Carga todas las máquinas disponibles para un gimnasio
+    func loadMachines(forGymId gymId: String) {
+        isLoading = true
+        errorMessage = nil
+        MachineLoader.loadMachinesForGym(gymId: gymId) { [weak self] machines in
+            DispatchQueue.main.async {
+                self?.machines = machines
+                self?.isLoading = false
             }
         }
     }
