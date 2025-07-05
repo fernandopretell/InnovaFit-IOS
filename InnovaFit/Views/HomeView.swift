@@ -23,6 +23,16 @@ struct HomeView: View {
                         machineVM.loadMachines(forGymId: gymId)
                     }
                 }
+
+                Button("Cerrar sesión") {
+                    viewModel.signOut()
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color(hex: "#00C2FF"))
+                .foregroundColor(.white)
+                .cornerRadius(12)
+                .padding(.horizontal)
             }
         }
         .background(Color.white)
