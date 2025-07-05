@@ -80,4 +80,19 @@ class AuthViewModel: ObservableObject {
             }
         }
     }
+
+    /// Cierra la sesión del usuario actual y vuelve al estado de login
+    func signOut() {
+        do {
+            try Auth.auth().signOut()
+            // Restablecer propiedades relevantes
+            phoneNumber = ""
+            otpCode = ""
+            verificationID = nil
+            userProfile = nil
+            authState = .login
+        } catch {
+            print("❌ Error al cerrar sesión: \(error.localizedDescription)")
+        }
+    }
 }
