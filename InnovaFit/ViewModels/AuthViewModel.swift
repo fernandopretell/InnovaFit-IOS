@@ -22,6 +22,19 @@ class AuthViewModel: ObservableObject {
 
     init() {
         loadGyms()
+        if let uid = Auth.auth().currentUser?.uid {
+            repository.fetchUserProfile(uid: uid) { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let profile):
+                        self?.userProfile = profile
+                        self?.authState = .home
+                    case .failure:
+                        self?.authState = .register
+                    }
+                }
+            }
+        }
     }
 
     /// Envía el código OTP al número de teléfono
