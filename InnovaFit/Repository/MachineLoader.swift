@@ -47,6 +47,20 @@ class MachineLoader {
         }
     }
 
+    /// Carga todas las máquinas asociadas a un gimnasio
+    static func loadMachinesForGym(gymId: String, completion: @escaping ([Machine]) -> Void) {
+        let db = Firestore.firestore()
+        db.collection("machines").whereField("gymId", isEqualTo: gymId).getDocuments { snapshot, error in
+            if let error {
+                print("❌ Error al cargar máquinas: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+            let machines = snapshot?.documents.compactMap { try? $0.data(as: Machine.self) } ?? []
+            completion(machines)
+        }
+    }
+
 
     /// Carga un `Gym` desde Firestore dado su `gymId`.
     static func loadGym(gymId: String, completion: @escaping (Gym?) -> Void) {

@@ -6,8 +6,9 @@ import FirebaseCore
 
 // MARK: - AppDelegate con soporte para Universal Links
 class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
-    
+
     @Published var pendingTag: String?
+    var didLaunchViaUniversalLink: Bool = false
     
     func application(
         _ application: UIApplication,
@@ -15,6 +16,17 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
     ) -> Bool {
         print("🚀 AppDelegate: aplicación lanzó")
         FirebaseApp.configure()
+        if let activities = launchOptions?[.userActivityDictionary] as? [AnyHashable: Any],
+           let activity = activities.values.first as? NSUserActivity,
+           activity.activityType == NSUserActivityTypeBrowsingWeb,
+           let url = activity.webpageURL,
+           let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+           let tag = components.queryItems?.first(where: { $0.name == "tag" })?.value {
+            pendingTag = tag
+            didLaunchViaUniversalLink = true
+        } else {
+            didLaunchViaUniversalLink = false
+        }
         return true
     }
     
@@ -26,9 +38,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
            let url = userActivity.webpageURL,
            let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
            let tag = components.queryItems?.first(where: { $0.name == "tag" })?.value {
-            
+
             print("📲 AppDelegate recibió tag por Universal Link: \(tag)")
             self.pendingTag = tag
+            didLaunchViaUniversalLink = true
             return true
         }
         
@@ -42,7 +55,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
 struct InnovaFitApp: App {
 
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @StateObject private var viewModel = MachineViewModel()
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([ ShowFeedback.self ])
@@ -59,7 +71,7 @@ struct InnovaFitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(viewModel: viewModel)
+            ContentView()
                 .onAppear {
                     print("🌀 ContentView aparece por primera vez")
                 }
