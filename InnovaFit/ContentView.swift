@@ -1,5 +1,4 @@
 import SwiftUI
-
 /// Maneja la navegación de autenticación utilizando `AuthViewModel`
 struct ContentView: View {
     @StateObject var authViewModel = AuthViewModel()

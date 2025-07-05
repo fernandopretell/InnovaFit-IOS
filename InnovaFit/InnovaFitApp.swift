@@ -8,7 +8,7 @@ import FirebaseCore
 class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
 
     @Published var pendingTag: String?
-    @Published var didLaunchViaUniversalLink: Bool = false
+    var didLaunchViaUniversalLink: Bool = false
     
     func application(
         _ application: UIApplication,
