@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-class MachineLoader {
+class MachineRepository {
     /// Consulta Firestore para obtener `gymId` y `machineId` a partir del `tag`.
     static func resolveTag(
         tag: String,
@@ -47,21 +47,6 @@ class MachineLoader {
         }
     }
 
-    /// Carga todas las máquinas asociadas a un gimnasio
-    static func loadMachinesForGym(gymId: String, completion: @escaping ([Machine]) -> Void) {
-        let db = Firestore.firestore()
-        db.collection("machines").whereField("gymId", isEqualTo: gymId).getDocuments { snapshot, error in
-            if let error {
-                print("❌ Error al cargar máquinas: \(error.localizedDescription)")
-                completion([])
-                return
-            }
-            let machines = snapshot?.documents.compactMap { try? $0.data(as: Machine.self) } ?? []
-            completion(machines)
-        }
-    }
-
-
     /// Carga un `Gym` desde Firestore dado su `gymId`.
     static func loadGym(gymId: String, completion: @escaping (Gym?) -> Void) {
         let db = Firestore.firestore()
@@ -80,6 +65,48 @@ class MachineLoader {
                 completion(nil)
             }
         }
+    }
+    
+    static func fetchMachinesByGym(forGymId gymId: String, completion: @escaping (Result<[Machine], Error>) -> Void) {
+        let db = Firestore.firestore()
+        
+        // 1. Consultar los vínculos gym-machine
+        db.collection("gym_machines")
+            .whereField("gymId", isEqualTo: gymId)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    completion(.success([]))
+                    return
+                }
+                
+                let machineIds = documents.compactMap { $0["machineId"] as? String }
+                
+                // 2. Consultar las máquinas por esos IDs
+                guard !machineIds.isEmpty else {
+                    completion(.success([]))
+                    return
+                }
+                
+                db.collection("machines")
+                    .whereField(FieldPath.documentID(), in: machineIds)
+                    .getDocuments { machineSnapshot, error in
+                        if let error = error {
+                            completion(.failure(error))
+                            return
+                        }
+                        
+                        let machines = machineSnapshot?.documents.compactMap {
+                            try? $0.data(as: Machine.self)
+                        } ?? []
+                        
+                        completion(.success(machines))
+                    }
+            }
     }
 }
 

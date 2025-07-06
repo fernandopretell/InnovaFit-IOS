@@ -8,4 +8,6 @@ struct UserProfile: Codable, Identifiable {
     let age: Int
     let gender: Gender
     let gym: Gym
+    var weight: Double
+    var height: Double
 }

@@ -39,7 +39,7 @@ class AuthViewModel: ObservableObject {
 
     /// Envía el código OTP al número de teléfono
     func sendOTP() {
-        PhoneAuthProvider.provider().verifyPhoneNumber(phoneNumber, uiDelegate: nil) { [weak self] id, error in
+        PhoneAuthProvider.provider().verifyPhoneNumber("+51"+phoneNumber, uiDelegate: nil) { [weak self] id, error in
             DispatchQueue.main.async {
                 if let id { self?.verificationID = id; self?.authState = .otp }
                 else { print("❌ Error OTP: \(error?.localizedDescription ?? "")") }
@@ -49,30 +49,63 @@ class AuthViewModel: ObservableObject {
 
     /// Verifica el código ingresado y decide si debe registrar al usuario o ir a la pantalla principal
     func verifyOTP() {
-        guard let verificationID else { return }
-        let credential = PhoneAuthProvider.provider().credential(withVerificationID: verificationID, verificationCode: otpCode)
+        guard let verificationID = verificationID else { return }
+
+        let credential = PhoneAuthProvider.provider().credential(
+            withVerificationID: verificationID,
+            verificationCode: otpCode
+        )
+
         Auth.auth().signIn(with: credential) { [weak self] result, error in
-            guard let self else { return }
-            if let error { print("❌ Error al verificar OTP: \(error.localizedDescription)"); return }
-            guard let uid = result?.user.uid else { return }
+            guard let self = self else { return }
+
+            if let error {
+                print("❌ Error al verificar OTP: \(error.localizedDescription)")
+                return
+            }
+
+            guard let uid = result?.user.uid else {
+                print("❌ UID no encontrado")
+                return
+            }
+
+            // ✅ Aquí decides a dónde navegar
             repository.fetchUserProfile(uid: uid) { fetchResult in
                 DispatchQueue.main.async {
                     switch fetchResult {
                     case .success(let profile):
                         self.userProfile = profile
-                        self.authState = .home
+                        self.authState = .home     // ⬅️ Navega al Home si ya tiene perfil
                     case .failure:
-                        self.authState = .register
+                        self.authState = .register // ⬅️ Solo si no hay perfil creado
                     }
                 }
             }
         }
     }
 
+
     /// Registra el usuario en Firestore con los datos proporcionados
-    func registerUser(name: String, age: Int, gender: Gender, gym: Gym) {
+    func registerUser(
+        name: String,
+        age: Int,
+        gender: Gender,
+        gym: Gym,
+        phone: String,
+        weight: Double,
+        height: Double
+    ) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
-        let profile = UserProfile(id: uid, name: name, phoneNumber: phoneNumber, age: age, gender: gender, gym: gym)
+        let profile = UserProfile(
+            id: uid,
+            name: name,
+            phoneNumber: phone,
+            age: age,
+            gender: gender,
+            gym: gym,
+            weight: weight,
+            height: height
+        )
         repository.saveUserProfile(profile) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {

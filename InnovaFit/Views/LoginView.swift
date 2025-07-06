@@ -8,6 +8,7 @@ struct LoginView: View {
         VStack(spacing: 24) {
             Text("Iniciar sesión")
                 .font(.title)
+                .bold()
                 .foregroundColor(Color(hex: "#111111"))
 
             TextField("Número de celular", text: $viewModel.phoneNumber)
@@ -17,7 +18,7 @@ struct LoginView: View {
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "#00C2FF"), lineWidth: 1)
+                        .stroke(Color.textPlaceholder, lineWidth: 1)
                 )
 
             Button("Enviar código") {
@@ -25,11 +26,27 @@ struct LoginView: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color(hex: "#00C2FF"))
-            .foregroundColor(.white)
-            .cornerRadius(12)
+            .background(Color.accentColor)
+            .foregroundColor(.textTitle)
+            .cornerRadius(28)
+            .bold()
+            
+            Spacer()
         }
         .padding()
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(Color.white)
     }
 }
+
+struct LoginView_Previews: PreviewProvider {
+    static var previews: some View {
+        LoginView(viewModel: AuthViewModel())
+            .previewDevice("iPhone 15")
+            .previewDisplayName("LoginView - Light")
+            .preferredColorScheme(.light)
+            .padding()
+            .background(Color.white)
+    }
+}
+

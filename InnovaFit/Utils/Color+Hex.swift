@@ -20,4 +20,16 @@ extension Color {
     }
 }
 
+extension Color {
+    static let innovaBackground = Color(hex: "#0F0F0F") // negro suave
+    static let innovaYellow     = Color(hex: "#FFD600") // amarillo marca
+    
+    static let textTitle        = Color(hex: "#111111")
+    static let textSubtitle     = Color(hex: "#3C3C3C")
+    static let textBody         = Color(hex: "#5A5A5A")
+    static let textPlaceholder  = Color(hex: "#9B9B9B")
+    
+    static let backgroundFields  = Color(hex: "#F6F4EC")
+}
+
 

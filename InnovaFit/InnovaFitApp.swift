@@ -3,6 +3,9 @@ import Firebase
 import FirebaseFirestore
 import SwiftData
 import FirebaseCore
+import UserNotifications
+import FirebaseAuth
+
 
 // MARK: - AppDelegate con soporte para Universal Links
 class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
@@ -16,6 +19,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
     ) -> Bool {
         print("🚀 AppDelegate: aplicación lanzó")
         FirebaseApp.configure()
+        
+        // 🔐 Solicita permiso de notificaciones push
+        requestNotificationPermission()
+        
         if let activities = launchOptions?[.userActivityDictionary] as? [AnyHashable: Any],
            let activity = activities.values.first as? NSUserActivity,
            activity.activityType == NSUserActivityTypeBrowsingWeb,
@@ -47,6 +54,40 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         
         return false
     }
+    
+    func application(_ application: UIApplication,
+                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        print("📱 Token APNs recibido: \(deviceToken.map { String(format: "%02.2hhx", $0) }.joined())")
+        Auth.auth().setAPNSToken(deviceToken, type: .unknown) // o .prod si estás en producción
+    }
+    
+    func application(_ application: UIApplication,
+                     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+                     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+
+        if Auth.auth().canHandleNotification(userInfo) {
+            print("📬 Notificación silenciosa manejada por FirebaseAuth")
+            completionHandler(.noData)
+            return
+        }
+
+        // Aquí podrías manejar otras notificaciones si tuvieras
+        print("🔔 Notificación no relacionada a FirebaseAuth: \(userInfo)")
+        completionHandler(.newData)
+    }
+    
+    func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                print("❌ Error al solicitar permiso de notificaciones: \(error.localizedDescription)")
+            } else {
+                print("🔔 Permiso de notificaciones: \(granted ? "aceptado" : "denegado")")
+            }
+        }
+
+        UIApplication.shared.registerForRemoteNotifications()
+    }
+
 }
 
 // InnovaFitApp.swift

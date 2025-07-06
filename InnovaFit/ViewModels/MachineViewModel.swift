@@ -9,6 +9,9 @@ class MachineViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var hasLoadedTag = false  // ✅ Nueva bandera
+    
+    private let repository = MachineRepository()
+    
 
     func loadDataFromTag(_ tag: String) {
         self.tag = tag
@@ -16,7 +19,7 @@ class MachineViewModel: ObservableObject {
         self.errorMessage = nil
         self.hasLoadedTag = false  // ✅ Se reinicia al iniciar
 
-        MachineLoader.resolveTag(tag: tag) { [weak self] gymId, machineId in
+        MachineRepository.resolveTag(tag: tag) { [weak self] gymId, machineId in
             guard let self = self else { return }
 
             guard let gymId = gymId, let machineId = machineId else {
@@ -34,13 +37,13 @@ class MachineViewModel: ObservableObject {
             var loadedMachine: Machine?
 
             group.enter()
-            MachineLoader.loadGym(gymId: gymId) { gym in
+            MachineRepository.loadGym(gymId: gymId) { gym in
                 loadedGym = gym
                 group.leave()
             }
 
             group.enter()
-            MachineLoader.loadMachine(machineId: machineId) { machine in
+            MachineRepository.loadMachine(machineId: machineId) { machine in
                 loadedMachine = machine
                 group.leave()
             }
@@ -58,13 +61,21 @@ class MachineViewModel: ObservableObject {
     func loadMachines(forGymId gymId: String) {
         isLoading = true
         errorMessage = nil
-        MachineLoader.loadMachinesForGym(gymId: gymId) { [weak self] machines in
+
+        MachineRepository.fetchMachinesByGym(forGymId: gymId) { [weak self] result in
             DispatchQueue.main.async {
-                self?.machines = machines
                 self?.isLoading = false
+                switch result {
+                case .success(let machines):
+                    self?.machines = machines
+                case .failure(let error):
+                    self?.machines = []
+                    self?.errorMessage = error.localizedDescription
+                }
             }
         }
     }
+
 }
 
 

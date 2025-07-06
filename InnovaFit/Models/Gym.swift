@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct Gym: Codable, Identifiable {
+struct Gym: Codable, Identifiable, Hashable {
     @DocumentID var id: String?
     let address: String
     let color: String?
