@@ -2,8 +2,10 @@
 struct PreviewFactory {
     static var sampleMachine: Machine {
         Machine(
+            id: "gym_001",
             name: "Prensa de Pierna",
             description: "Ideal para trabajar los cuádriceps y glúteos.",
+            imageUrl: "",
             defaultVideos: [
                 Video(
                     title: "Leg Press Estandar gffgjhjfjhjhgjhgjh",

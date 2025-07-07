@@ -69,44 +69,52 @@ class MachineRepository {
     
     static func fetchMachinesByGym(forGymId gymId: String, completion: @escaping (Result<[Machine], Error>) -> Void) {
         let db = Firestore.firestore()
+        print("📥 Iniciando consulta de gym_machines para gymId: \(gymId)")
         
-        // 1. Consultar los vínculos gym-machine
         db.collection("gym_machines")
             .whereField("gymId", isEqualTo: gymId)
             .getDocuments { snapshot, error in
                 if let error = error {
+                    print("❌ Error al consultar gym_machines: \(error.localizedDescription)")
                     completion(.failure(error))
                     return
                 }
-                
+
                 guard let documents = snapshot?.documents else {
+                    print("⚠️ No se encontraron vínculos gym_machines")
                     completion(.success([]))
                     return
                 }
-                
+
                 let machineIds = documents.compactMap { $0["machineId"] as? String }
-                
-                // 2. Consultar las máquinas por esos IDs
+                print("✅ IDs de máquinas encontrados: \(machineIds)")
+
                 guard !machineIds.isEmpty else {
+                    print("⚠️ Lista de machineIds está vacía")
                     completion(.success([]))
                     return
                 }
-                
+
                 db.collection("machines")
                     .whereField(FieldPath.documentID(), in: machineIds)
                     .getDocuments { machineSnapshot, error in
                         if let error = error {
+                            print("❌ Error al consultar machines: \(error.localizedDescription)")
                             completion(.failure(error))
                             return
                         }
-                        
+
                         let machines = machineSnapshot?.documents.compactMap {
                             try? $0.data(as: Machine.self)
                         } ?? []
-                        
+
+                        print("📦 Máquinas cargadas: \(machines.count)")
+                        machines.forEach { print("🔹 \($0.name)") }
+
                         completion(.success(machines))
                     }
             }
     }
+
 }
 

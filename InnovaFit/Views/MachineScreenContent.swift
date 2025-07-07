@@ -253,8 +253,10 @@ struct ToastView: View {
 struct MachineScreenContent_Previews: PreviewProvider {
     static var previews: some View {
         let machine = Machine(
+            id: "gym_001",
             name: "LEG PRESS",
             description: "Ideal para trabajar los cuádriceps y glúteos.",
+            imageUrl: "",
             defaultVideos: [
                 Video(
                     title: "Prensa de Pierna",
