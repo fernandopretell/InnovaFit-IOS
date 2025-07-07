@@ -40,7 +40,7 @@ struct HomeView: View {
                 .padding(.horizontal)
                 .padding(.top)
                 .onAppear {
-                    if let gymId = viewModel.userProfile?.gym.id {
+                    if let gymId = viewModel.userProfile?.gymId {
                         machineVM.loadMachines(forGymId: gymId)
                     }
                 }
@@ -140,6 +140,7 @@ class Mock2AuthViewModel: AuthViewModel {
             phoneNumber: "+51999999999",
             age: 25,
             gender: .masculino,
+            gymId: "gym_001",
             gym: Gym(id: "gym_001",
                      address: "Av. Ejemplo 123",
                      color: "#FFD600",
