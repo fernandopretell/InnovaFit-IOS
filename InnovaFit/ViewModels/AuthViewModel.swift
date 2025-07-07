@@ -102,6 +102,7 @@ class AuthViewModel: ObservableObject {
             phoneNumber: phone,
             age: age,
             gender: gender,
+            gymId: gym.id ?? "",
             gym: gym,
             weight: weight,
             height: height
