@@ -19,6 +19,9 @@ class AuthViewModel: ObservableObject {
     @Published var gyms: [Gym] = []
 
     private let repository = UserRepository()
+    
+    @Published var isLoading: Bool = false
+
 
     init() {
         loadGyms()
@@ -39,8 +42,10 @@ class AuthViewModel: ObservableObject {
 
     /// Envía el código OTP al número de teléfono
     func sendOTP() {
+        self.isLoading = true
         PhoneAuthProvider.provider().verifyPhoneNumber("+51"+phoneNumber, uiDelegate: nil) { [weak self] id, error in
             DispatchQueue.main.async {
+                self?.isLoading = false
                 if let id { self?.verificationID = id; self?.authState = .otp }
                 else { print("❌ Error OTP: \(error?.localizedDescription ?? "")") }
             }
@@ -89,7 +94,7 @@ class AuthViewModel: ObservableObject {
     func registerUser(
         name: String,
         age: Int,
-        gender: Gender,
+        gender: String,
         gym: Gym,
         phone: String,
         weight: Double,
@@ -102,7 +107,6 @@ class AuthViewModel: ObservableObject {
             phoneNumber: phone,
             age: age,
             gender: gender,
-            gymId: gym.id ?? "",
             gym: gym,
             weight: weight,
             height: height

@@ -3,6 +3,7 @@ import SwiftUI
 /// Vista para ingresar el número de celular y solicitar el OTP
 struct LoginView: View {
     @ObservedObject var viewModel: AuthViewModel
+    @FocusState private var isPhoneFocused: Bool
 
     var body: some View {
         VStack(spacing: 24) {
@@ -11,33 +12,62 @@ struct LoginView: View {
                 .bold()
                 .foregroundColor(Color(hex: "#111111"))
 
-            TextField("Número de celular", text: $viewModel.phoneNumber)
-                .keyboardType(.phonePad)
-                .padding()
-                .background(Color.white)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.textPlaceholder, lineWidth: 1)
-                )
+            ZStack(alignment: .leading) {
+                if viewModel.phoneNumber.isEmpty {
+                    Text("Número de celular")
+                        .background(Color.white)
+                        .foregroundColor(.textPlaceholder)
+                        .padding(.leading, 16)
+                        .font(.system(size: 16))
+                }
 
-            Button("Enviar código") {
-                viewModel.sendOTP()
+                TextField("", text: $viewModel.phoneNumber)
+                    .keyboardType(.phonePad)
+                    .padding()
+                    .foregroundColor(Color.black)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.textPlaceholder, lineWidth: 1)
+                    )
+                    .focused($isPhoneFocused)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.accentColor)
-            .foregroundColor(.textTitle)
-            .cornerRadius(28)
-            .bold()
-            
+
+            Button(action: {
+                viewModel.sendOTP()
+            }) {
+                if viewModel.isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.accentColor)
+                        .cornerRadius(28)
+                } else {
+                    Text("Enviar código")
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .foregroundColor(.textTitle)
+                        .background(Color.accentColor)
+                        .cornerRadius(28)
+                }
+            }
+            .disabled(viewModel.isLoading)
+
             Spacer()
         }
         .padding()
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Color.white)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                isPhoneFocused = true
+            }
+        }
     }
 }
+
 
 struct LoginView_Previews: PreviewProvider {
     static var previews: some View {

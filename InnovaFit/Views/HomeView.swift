@@ -5,69 +5,100 @@ struct HomeView: View {
     @ObservedObject var viewModel: AuthViewModel
     @StateObject private var machineVM = MachineViewModel()
     @State private var isPresentingScanner = false
+    @State private var selectedMachine: Machine?
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    if let profile = viewModel.userProfile {
-                        Text("Hola, \(profile.name) 👋")
-                            .font(.title2.bold())
-                            .foregroundColor(.textTitle)
+        NavigationStack {
+            ZStack(alignment: .bottomTrailing) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        if let profile = viewModel.userProfile {
+                            // 👤 Encabezado
+                            HStack {
+                                Text("Hola, \(profile.name) 👋")
+                                    .font(.title2.bold())
+                                    .foregroundColor(.textTitle)
+
+                                Spacer()
+
+                                Menu {
+                                    Button("Cerrar sesión", role: .destructive) {
+                                        viewModel.signOut()
+                                    }
+                                } label: {
+                                    Image(systemName: "gearshape")
+                                        .font(.system(size: 20, weight: .bold))
+                                        .foregroundColor(.textTitle)
+                                }
+                            }
                             .padding(.top)
 
-                        Text("Estas son las máquinas disponibles en \(profile.gym.name):")
+                            // 🏋️ Texto con gimnasio en negrita
+                            (
+                                Text("Estas son las máquinas disponibles en ")
+                                + Text(profile.gym.name).fontWeight(.bold)
+                            )
                             .font(.body)
                             .foregroundColor(.textBody)
 
-                        ForEach(machineVM.machines) { machine in
-                            MachineCardView(machine: machine) {
-                                print("📹 Ver tutorial para: \(machine.name)")
-                                // Puedes navegar al detalle aquí
+                            // 🛠️ Lista de máquinas
+                            ForEach(machineVM.machines) { machine in
+                                MachineCardView(machine: machine) {
+                                    selectedMachine = machine
+                                }
+                            }
+
+                            // Enlace oculto para navegación
+                            if let machine = selectedMachine {
+                                NavigationLink(value: machine) {
+                                    EmptyView()
+                                }
+                                .hidden()
                             }
                         }
-
-                        Button("Cerrar sesión") {
-                            viewModel.signOut()
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
+                    .onAppear {
+                        if let gymId = viewModel.userProfile?.gym.id {
+                            machineVM.loadMachines(forGymId: gymId)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(hex: "#00C2FF"))
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
                     }
                 }
-                .padding(.horizontal)
-                .padding(.top)
-                .onAppear {
-                    if let gymId = viewModel.userProfile?.gymId {
-                        machineVM.loadMachines(forGymId: gymId)
-                    }
-                }
-            }
 
-            Button(action: {
-                isPresentingScanner = true
-            }) {
-                Image(systemName: "camera.viewfinder")
-                    .font(.system(size: 24, weight: .bold))
+                // 📷 Botón flotante escáner QR
+                Button(action: {
+                    isPresentingScanner = true
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "qrcode.viewfinder")
+                        Text("Escanea una máquina")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
                     .padding()
                     .background(Color.innovaYellow)
                     .foregroundColor(.black)
-                    .clipShape(Circle())
-                    .shadow(radius: 2)
+                    .cornerRadius(28)
+                }
+                .padding()
+                .fullScreenCover(isPresented: $isPresentingScanner) {
+                    QRScannerView { scannedCode in
+                        print("📦 Código escaneado: \(scannedCode)")
+                        isPresentingScanner = false
+                    }
+                }
             }
-            .padding()
-            .fullScreenCover(isPresented: $isPresentingScanner) {
-                QRScannerView { scannedCode in
-                    print("📦 Código escaneado: \(scannedCode)")
-                    isPresentingScanner = false
+            .background(Color.white.ignoresSafeArea())
+            .navigationDestination(for: Machine.self) { machine in
+                if let gym = viewModel.userProfile?.gym {
+                    MachineScreenContent(machine: machine, gym: gym)
                 }
             }
         }
-        .background(Color.backgroundFields.ignoresSafeArea())
     }
 }
+
+
 
 struct MachineCardView: View {
     let machine: Machine
@@ -84,7 +115,7 @@ struct MachineCardView: View {
                     Text(machine.description)
                         .font(.subheadline)
                         .foregroundColor(.textBody)
-                        .lineLimit(2)
+                        .lineLimit(3)
                 }
 
                 Spacer()
@@ -101,19 +132,26 @@ struct MachineCardView: View {
                 .cornerRadius(10)
             }
 
-            Button("Ver tutorial") {
-                onTutorialTap()
+            Button(action: onTutorialTap) {
+                HStack {
+                    Text("Ver tutorial")
+                    Image(systemName: "arrow.right")
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color(hex: "#F5F5F0"))
+                .foregroundColor(.textTitle)
+                .cornerRadius(8)
+                .font(.system(size: 14, weight: .semibold))
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color.innovaYellow)
-            .foregroundColor(.black)
-            .cornerRadius(8)
-            .font(.system(size: 14, weight: .semibold))
         }
         .padding()
         .background(Color.white)
         .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        )
         .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
     }
 }

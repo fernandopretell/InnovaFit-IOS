@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct Video: Identifiable, Codable, Equatable {
+struct Video: Identifiable, Codable, Equatable, Hashable {
     var id: String = UUID().uuidString // o usar el id real si viene de Firestore
     let title: String
     let urlVideo: String

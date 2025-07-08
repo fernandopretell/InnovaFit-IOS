@@ -6,7 +6,7 @@
 //
 
 
-struct Muscle: Codable, Equatable {
+struct Muscle: Codable, Equatable, Hashable {
     let weight: Int
     let icon: String
 

@@ -16,25 +16,39 @@ struct OTPVerificationView: View {
                 .bold()
                 .foregroundColor(Color.textSubtitle)
 
-            TextField("Código", text: $viewModel.otpCode)
-                .keyboardType(.numberPad)
-                .padding()
-                .background(Color.white)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.accentColor, lineWidth: 1)
-                )
+            ZStack(alignment: .leading) {
+                if viewModel.otpCode.isEmpty {
+                    Text("Código")
+                        .foregroundColor(.textPlaceholder) // define este color
+                        .padding(.leading, 16)
+                        .font(.system(size: 16))
+                }
 
-            Button("Verificar") {
-                viewModel.verifyOTP()
+                TextField("", text: $viewModel.otpCode)
+                    .keyboardType(.numberPad)
+                    .padding()
+                    .background(Color.white)
+                    .foregroundColor(Color.black)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.accentColor, lineWidth: 1)
+                    )
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.accentColor)
-            .foregroundColor(Color.textTitle)
-            .bold()
-            .cornerRadius(12)
+
+
+            Button(action: {
+                viewModel.verifyOTP()
+            }) {
+                Text("Verificar")
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.accentColor)
+                    .foregroundColor(Color.textTitle)
+                    .cornerRadius(28)
+            }
+
             
             Spacer()
         }

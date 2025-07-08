@@ -1,6 +1,6 @@
 import Foundation
 
-struct Segment: Codable, Identifiable {
+struct Segment: Codable, Identifiable, Hashable {
     var id: String = UUID().uuidString  // id generado automáticamente en memoria
     let start: Int
     let end: Int
