@@ -5,7 +5,6 @@ struct HomeView: View {
     @ObservedObject var viewModel: AuthViewModel
     @StateObject private var machineVM = MachineViewModel()
     @State private var isPresentingScanner = false
-    @State private var selectedMachine: Machine?
 
     var body: some View {
         NavigationStack {
@@ -43,24 +42,16 @@ struct HomeView: View {
 
                             // 🛠️ Lista de máquinas
                             ForEach(machineVM.machines) { machine in
-                                MachineCardView(machine: machine) {
-                                    selectedMachine = machine
-                                }
-                            }
-
-                            // Enlace oculto para navegación
-                            if let machine = selectedMachine {
                                 NavigationLink(value: machine) {
-                                    EmptyView()
+                                    MachineCardView(machine: machine)
                                 }
-                                .hidden()
                             }
                         }
                     }
                     .padding(.horizontal)
                     .padding(.top)
                     .onAppear {
-                        if let gymId = viewModel.userProfile?.gym.id {
+                        if let gymId = viewModel.userProfile?.gymId {
                             machineVM.loadMachines(forGymId: gymId)
                         }
                     }
@@ -102,7 +93,6 @@ struct HomeView: View {
 
 struct MachineCardView: View {
     let machine: Machine
-    let onTutorialTap: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -132,18 +122,16 @@ struct MachineCardView: View {
                 .cornerRadius(10)
             }
 
-            Button(action: onTutorialTap) {
-                HStack {
-                    Text("Ver tutorial")
-                    Image(systemName: "arrow.right")
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color(hex: "#F5F5F0"))
-                .foregroundColor(.textTitle)
-                .cornerRadius(8)
-                .font(.system(size: 14, weight: .semibold))
+            HStack {
+                Text("Ver tutorial")
+                Image(systemName: "arrow.right")
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(hex: "#F5F5F0"))
+            .foregroundColor(.textTitle)
+            .cornerRadius(8)
+            .font(.system(size: 14, weight: .semibold))
         }
         .padding()
         .background(Color.white)
