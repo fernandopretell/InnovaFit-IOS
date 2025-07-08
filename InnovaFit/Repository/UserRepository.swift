@@ -28,7 +28,12 @@ class UserRepository {
                 return
             }
             do {
-                let profile = try doc.data(as: UserProfile.self)
+                var profile = try doc.data(as: UserProfile.self)
+                // Asegurar que el gimnasio tenga el ID correcto
+                if var gym = profile.gym {
+                    gym.id = profile.gymId
+                    profile.gym = gym
+                }
                 completion(.success(profile))
             } catch {
                 completion(.failure(error))
