@@ -96,7 +96,7 @@ struct HomeView: View {
 
                 case .machine(let machine, let gym):
                     SwipeBackNavigation {
-                        MachineScreenContent(machine: machine, gym: gym)
+                        MachineScreenContent2(machine: machine, gym: gym)
                     }
                 }
             }
