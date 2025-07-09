@@ -6,9 +6,9 @@ struct HomeView: View {
     @StateObject private var machineVM = MachineViewModel()
     @State private var navigationPath = NavigationPath()
 
-    enum NavigationRoute: Hashable {
+    enum NavigationRoute: Hashable, Codable {
         case qrScanner
-        case machine(Machine)
+        case machine(machine: Machine, gym: Gym)
     }
 
     var body: some View {
@@ -46,9 +46,11 @@ struct HomeView: View {
                             .foregroundColor(.textBody)
 
                             // 🛠️ Lista de máquinas
-                            ForEach(machineVM.machines) { machine in
-                                NavigationLink(value: NavigationRoute.machine(machine)) {
-                                    MachineCardView(machine: machine)
+                            if let gym = profile.gym {
+                                ForEach(machineVM.machines) { machine in
+                                    NavigationLink(value: NavigationRoute.machine(machine: machine, gym: gym)) {
+                                        MachineCardView(machine: machine)
+                                    }
                                 }
                             }
                         }
@@ -85,20 +87,39 @@ struct HomeView: View {
                     SwipeBackNavigation {
                         QRScannerView { scannedCode in
                             print("📦 Código escaneado: \(scannedCode)")
-                            navigationPath.removeLast() // volver automáticamente
+                            navigationPath.removeLast()
+                            if let tag = extractTag(from: scannedCode) {
+                                machineVM.loadDataFromTag(tag)
+                            }
                         }
                     }
 
-                case .machine(let machine):
-                    if let gym = viewModel.userProfile?.gym {
-                        SwipeBackNavigation {
-                            MachineScreenContent(machine: machine, gym: gym)
-                        }
-
+                case .machine(let machine, let gym):
+                    SwipeBackNavigation {
+                        MachineScreenContent(machine: machine, gym: gym)
                     }
                 }
             }
         }
+        .onChange(of: machineVM.hasLoadedTag) { _, newValue in
+            if newValue,
+               let machine = machineVM.machine,
+               let gym = machineVM.gym {
+                navigationPath.append(.machine(machine: machine, gym: gym))
+                machineVM.hasLoadedTag = false
+            }
+        }
+    }
+
+    private func extractTag(from urlString: String) -> String? {
+        if let components = URLComponents(string: urlString) {
+            if let item = components.queryItems?.first(where: { $0.name.lowercased() == "tag" }) {
+                return item.value
+            }
+            let lastPath = components.path.split(separator: "/").last
+            return lastPath.map { String($0) }
+        }
+        return nil
     }
 }
 
