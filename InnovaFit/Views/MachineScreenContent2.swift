@@ -9,6 +9,12 @@ struct MachineScreenContent2: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedVideo: Video?
 
+    @Query private var feedbackFlags: [ShowFeedback]
+    @AppStorage("hasWatchedAllVideos") var hasWatchedAllVideos: Bool = false
+    @Environment(\.modelContext) private var context
+    @State private var showFeedbackDialog = false
+    @State private var showToast = false
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -74,16 +80,61 @@ struct MachineScreenContent2: View {
             if (video.segments ?? []).isEmpty {
                 VideoPlayerView(video: video) {
                     selectedVideo = nil
+                    if shouldShowFeedback(feedbackFlags) {
+                        showFeedbackDialog = true
+                    }
                 }
             } else {
                 SegmentedVideoPlayerView(
                     video: video,
                     gymColor: Color(hex: gym.safeColor),
-                    onDismiss: { selectedVideo = nil },
-                    onAllSegmentsFinished: {}
+                    onDismiss: {
+                        selectedVideo = nil
+                        if shouldShowFeedback(feedbackFlags) {
+                            showFeedbackDialog = true
+                        }
+                    },
+                    onAllSegmentsFinished: {
+                        if shouldShowFeedback(feedbackFlags) {
+                            showFeedbackDialog = true
+                        }
+                    }
                 )
             }
         }
+        .sheet(isPresented: $showFeedbackDialog) {
+            FeedbackDialogView(
+                gymId: gym.id ?? "gym_001",
+                gymColorHex: gym.safeColor,
+                onDismiss: { dismissFeedback() },
+                onFeedbackSent: { dismissFeedback() }
+            )
+        }
+        .task(id: "\(hasWatchedAllVideos)-\(feedbackFlags.first?.isShowFeedback == true)") {
+            if shouldShowFeedback(feedbackFlags) {
+                showFeedbackDialog = true
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if shouldShowFeedback(feedbackFlags) {
+                    showFeedbackDialog = true
+                }
+            }
+        }
+        .overlay(
+            Group {
+                if showToast {
+                    VStack {
+                        ToastView2(message: "¡Gracias por tus comentarios!")
+                            .padding(.top, 50)
+                        Spacer()
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(10)
+                }
+            }
+        )
     }
 }
 
@@ -200,6 +251,31 @@ struct ToastView2: View {
     }
 }
 
+private extension MachineScreenContent2 {
+    func shouldShowFeedback(_ flags: [ShowFeedback]) -> Bool {
+        hasWatchedAllVideos && flags.first?.isShowFeedback != true
+    }
+
+    func dismissFeedback() {
+        showFeedbackDialog = false
+
+        guard feedbackFlags.isEmpty else { return }
+
+        let flag = ShowFeedback(isShowFeedback: true)
+        context.insert(flag)
+
+        do {
+            try context.save()
+            withAnimation { showToast = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation { showToast = false }
+            }
+        } catch {
+            print("⚠️ Error al guardar ShowFeedback: \(error)")
+        }
+    }
+}
+
 
 struct MachineScreenContent_Previews2: PreviewProvider {
     static var previews: some View {
@@ -232,7 +308,7 @@ struct MachineScreenContent_Previews2: PreviewProvider {
             isActive: true
         )
 
-        MachineScreenContent(machine: machine, gym: gym)
+        MachineScreenContent2(machine: machine, gym: gym)
     }
 }
 
