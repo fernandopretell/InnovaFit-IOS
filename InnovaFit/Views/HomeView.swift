@@ -118,6 +118,7 @@ struct MachineCardView: View {
                         .font(.subheadline)
                         .foregroundColor(.textBody)
                         .lineLimit(3)
+                        .multilineTextAlignment(.leading)
                 }
 
                 Spacer()

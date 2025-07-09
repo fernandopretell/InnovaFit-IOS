@@ -6,7 +6,7 @@ struct SwipeBackNavigation<Content: View>: UIViewControllerRepresentable {
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
-  
+
     func makeUIViewController(context: Context) -> UIHostingController<Content> {
         let hosting = UIHostingController(rootView: content)
         hosting.view.backgroundColor = .clear
@@ -20,6 +20,7 @@ struct SwipeBackNavigation<Content: View>: UIViewControllerRepresentable {
             navigationController.setNavigationBarHidden(true, animated: false)
             navigationController.interactivePopGestureRecognizer?.delegate = context.coordinator
         }
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
