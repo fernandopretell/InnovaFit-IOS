@@ -72,11 +72,16 @@ struct HomeView: View {
                     .cornerRadius(28)
                 }
                 .padding()
-                .fullScreenCover(isPresented: $isPresentingScanner) {
+
+                NavigationLink(isActive: $isPresentingScanner) {
                     QRScannerView { scannedCode in
                         print("📦 Código escaneado: \(scannedCode)")
                         isPresentingScanner = false
                     }
+                    .navigationTitle("Escanear QR")
+                    .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    EmptyView()
                 }
             }
             .background(Color.white.ignoresSafeArea())
