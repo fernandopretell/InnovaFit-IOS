@@ -58,9 +58,18 @@ class MachineViewModel: ObservableObject {
     }
 
     /// Carga todas las máquinas disponibles para un gimnasio
+    /// Carga todas las máquinas disponibles para un gimnasio
     func loadMachines(forGymId gymId: String) {
+        // ✅ Previene recarga si ya hay datos
+        if !machines.isEmpty {
+            print("⏸️ Máquinas ya cargadas, no se vuelve a consultar.")
+            return
+        }
+
         isLoading = true
         errorMessage = nil
+
+        print("📥 Iniciando consulta de gym_machines para gymId: \(gymId)")
 
         MachineRepository.fetchMachinesByGym(forGymId: gymId) { [weak self] result in
             DispatchQueue.main.async {
@@ -75,6 +84,7 @@ class MachineViewModel: ObservableObject {
             }
         }
     }
+
 
 }
 

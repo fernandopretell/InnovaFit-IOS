@@ -126,6 +126,7 @@ struct MachineScreenContent: View {
             }
             .background(Color.white)
             .ignoresSafeArea(edges: .bottom)
+            .navigationBarBackButtonHidden(true)
         }
 
     private var header: some View {

@@ -4,10 +4,15 @@ import FirebaseAuth
 struct HomeView: View {
     @ObservedObject var viewModel: AuthViewModel
     @StateObject private var machineVM = MachineViewModel()
-    @State private var isPresentingScanner = false
+    @State private var navigationPath = NavigationPath()
+
+    enum NavigationRoute: Hashable {
+        case qrScanner
+        case machine(Machine)
+    }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottomTrailing) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
@@ -42,7 +47,7 @@ struct HomeView: View {
 
                             // 🛠️ Lista de máquinas
                             ForEach(machineVM.machines) { machine in
-                                NavigationLink(value: machine) {
+                                NavigationLink(value: NavigationRoute.machine(machine)) {
                                     MachineCardView(machine: machine)
                                 }
                             }
@@ -59,7 +64,7 @@ struct HomeView: View {
 
                 // 📷 Botón flotante escáner QR
                 Button(action: {
-                    isPresentingScanner = true
+                    navigationPath.append(NavigationRoute.qrScanner)
                 }) {
                     HStack(spacing: 8) {
                         Image(systemName: "qrcode.viewfinder")
@@ -72,29 +77,31 @@ struct HomeView: View {
                     .cornerRadius(28)
                 }
                 .padding()
-
-                NavigationLink(isActive: $isPresentingScanner) {
-                    QRScannerView { scannedCode in
-                        print("📦 Código escaneado: \(scannedCode)")
-                        isPresentingScanner = false
-                    }
-                    .navigationTitle("Escanear QR")
-                    .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    EmptyView()
-                }
             }
             .background(Color.white.ignoresSafeArea())
-            .navigationDestination(for: Machine.self) { machine in
-                if let gym = viewModel.userProfile?.gym {
-                    MachineScreenContent(machine: machine, gym: gym)
+            .navigationDestination(for: NavigationRoute.self) { route in
+                switch route {
+                case .qrScanner:
+                    QRScannerView { scannedCode in
+                        print("📦 Código escaneado: \(scannedCode)")
+                        navigationPath.removeLast() // volver automáticamente
+                    }
+                    .navigationTitle("")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .navigationBarBackButtonHidden(true)
+
+                case .machine(let machine):
+                    if let gym = viewModel.userProfile?.gym {
+                        MachineScreenContent(machine: machine, gym: gym)
+                            .navigationTitle("")
+                            .navigationBarTitleDisplayMode(.inline)
+                            .navigationBarBackButtonHidden(true)
+                    }
                 }
             }
         }
     }
 }
-
-
 
 struct MachineCardView: View {
     let machine: Machine
