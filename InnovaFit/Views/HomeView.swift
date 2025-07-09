@@ -88,14 +88,14 @@ struct HomeView: View {
                     }
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .navigationBarBackButtonHidden(true)
+                    //.navigationBarBackButtonHidden(true)
 
                 case .machine(let machine):
                     if let gym = viewModel.userProfile?.gym {
                         MachineScreenContent(machine: machine, gym: gym)
                             .navigationTitle("")
                             .navigationBarTitleDisplayMode(.inline)
-                            .navigationBarBackButtonHidden(true)
+                            //.navigationBarBackButtonHidden(true)
                     }
                 }
             }
