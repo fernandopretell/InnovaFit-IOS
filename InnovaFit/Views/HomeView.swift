@@ -86,16 +86,12 @@ struct HomeView: View {
                         print("📦 Código escaneado: \(scannedCode)")
                         navigationPath.removeLast() // volver automáticamente
                     }
-                    .navigationTitle("")
-                    .navigationBarTitleDisplayMode(.inline)
-                    //.navigationBarBackButtonHidden(true)
+                    .toolbar(.hidden, for: .navigationBar)
 
                 case .machine(let machine):
                     if let gym = viewModel.userProfile?.gym {
                         MachineScreenContent(machine: machine, gym: gym)
-                            .navigationTitle("")
-                            .navigationBarTitleDisplayMode(.inline)
-                            //.navigationBarBackButtonHidden(true)
+                            .toolbar(.hidden, for: .navigationBar)
                     }
                 }
             }
