@@ -7,6 +7,7 @@ struct MachineScreenContent2: View {
     let gym: Gym
 
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedVideo: Video?
 
     var body: some View {
         ScrollView {
@@ -59,7 +60,9 @@ struct MachineScreenContent2: View {
                 // Lista de videos sugeridos
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(machine.defaultVideos, id: \.id) { video in
-                        VideoRowView(video: video)
+                        VideoRowView(video: video) {
+                            selectedVideo = video
+                        }
                     }
                 }
             }
@@ -67,11 +70,26 @@ struct MachineScreenContent2: View {
         }
         .background(Color.white)
         .preferredColorScheme(.light)
+        .fullScreenCover(item: $selectedVideo) { video in
+            if (video.segments ?? []).isEmpty {
+                VideoPlayerView(video: video) {
+                    selectedVideo = nil
+                }
+            } else {
+                SegmentedVideoPlayerView(
+                    video: video,
+                    gymColor: Color(hex: gym.safeColor),
+                    onDismiss: { selectedVideo = nil },
+                    onAllSegmentsFinished: {}
+                )
+            }
+        }
     }
 }
 
 struct VideoRowView: View {
     let video: Video
+    let onTap: () -> Void
 
     var body: some View {
         VStack {
@@ -139,6 +157,9 @@ struct VideoRowView: View {
         )
         .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
         .padding(.horizontal, 16)
+        .onTapGesture {
+            onTap()
+        }
     }
 }
 
