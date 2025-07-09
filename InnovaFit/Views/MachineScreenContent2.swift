@@ -66,6 +66,7 @@ struct MachineScreenContent2: View {
             .padding(.vertical)
         }
         .background(Color.white)
+        .ignoresSafeArea(edges: .bottom)
         .navigationTitle(machine.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
