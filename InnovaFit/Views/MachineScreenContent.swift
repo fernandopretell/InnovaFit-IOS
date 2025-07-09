@@ -124,6 +124,9 @@ struct MachineScreenContent: View {
                     .zIndex(10)
                 }
             }
+            .background(Color.white)
+            .ignoresSafeArea(edges: .bottom)
+            .navigationBarBackButtonHidden(true)
         }
 
     private var header: some View {

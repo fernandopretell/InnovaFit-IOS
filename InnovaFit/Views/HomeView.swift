@@ -35,7 +35,7 @@ struct HomeView: View {
                             // 🏋️ Texto con gimnasio en negrita
                             (
                                 Text("Estas son las máquinas disponibles en ")
-                                + Text(profile.gym.name).fontWeight(.bold)
+                                + Text(profile.gym?.name ?? "").fontWeight(.bold)
                             )
                             .font(.body)
                             .foregroundColor(.textBody)
