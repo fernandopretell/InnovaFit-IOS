@@ -1,14 +1,12 @@
 import SwiftUI
 
-/// Container to hide the navigation bar while keeping the swipe back gesture
-/// of the parent `UINavigationController`.
 struct SwipeBackNavigation<Content: View>: UIViewControllerRepresentable {
     let content: Content
 
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
-
+  
     func makeUIViewController(context: Context) -> UIHostingController<Content> {
         let hosting = UIHostingController(rootView: content)
         hosting.view.backgroundColor = .clear
@@ -22,7 +20,6 @@ struct SwipeBackNavigation<Content: View>: UIViewControllerRepresentable {
             navigationController.setNavigationBarHidden(true, animated: false)
             navigationController.interactivePopGestureRecognizer?.delegate = context.coordinator
         }
-    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
