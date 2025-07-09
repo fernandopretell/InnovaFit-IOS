@@ -78,17 +78,17 @@ struct VideoCarouselView: View {
             }
             .onChange(of: scrollPosition) { oldScroll, newScroll in
                 guard let scroll = newScroll else { return }
-                
+
                 if scroll / itemCount == 0 && scroll % itemCount == itemCount - 1 {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
-                        itemsArray.removeLast()
-                        itemsArray.insert(videos, at: 0)
+                    itemsArray.removeLast()
+                    itemsArray.insert(videos, at: 0)
+                    withAnimation(.none) {
                         scrollPosition = scroll + itemCount
                     }
                 } else if scroll / itemCount == 2 && scroll % itemCount == 0 {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
-                        itemsArray.removeFirst()
-                        itemsArray.append(videos)
+                    itemsArray.removeFirst()
+                    itemsArray.append(videos)
+                    withAnimation(.none) {
                         scrollPosition = scroll - itemCount
                     }
                 }
