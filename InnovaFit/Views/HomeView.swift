@@ -82,20 +82,20 @@ struct HomeView: View {
             .navigationDestination(for: NavigationRoute.self) { route in
                 switch route {
                 case .qrScanner:
-                    QRScannerView { scannedCode in
-                        print("📦 Código escaneado: \(scannedCode)")
-                        navigationPath.removeLast() // volver automáticamente
+                    SwipeBackNavigation {
+                        QRScannerView { scannedCode in
+                            print("📦 Código escaneado: \(scannedCode)")
+                            navigationPath.removeLast() // volver automáticamente
+                        }
                     }
-                    .navigationTitle("")
-                    .navigationBarTitleDisplayMode(.inline)
-                    //.navigationBarBackButtonHidden(true)
+                    .navigationBarHidden(true)
 
                 case .machine(let machine):
                     if let gym = viewModel.userProfile?.gym {
-                        MachineScreenContent(machine: machine, gym: gym)
-                            .navigationTitle("")
-                            .navigationBarTitleDisplayMode(.inline)
-                            //.navigationBarBackButtonHidden(true)
+                        SwipeBackNavigation {
+                            MachineScreenContent(machine: machine, gym: gym)
+                        }
+                        .navigationBarHidden(true)
                     }
                 }
             }
