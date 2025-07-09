@@ -9,6 +9,7 @@ struct HomeView: View {
     enum NavigationRoute: Hashable {
         case qrScanner
         case machine(Machine)
+        case scannedMachine(machine: Machine, gym: Gym)
     }
 
     var body: some View {
@@ -85,7 +86,10 @@ struct HomeView: View {
                     SwipeBackNavigation {
                         QRScannerView { scannedCode in
                             print("📦 Código escaneado: \(scannedCode)")
-                            navigationPath.removeLast() // volver automáticamente
+                            navigationPath.removeLast()
+                            if let tag = extractTag(from: scannedCode) {
+                                machineVM.loadDataFromTag(tag)
+                            }
                         }
                     }
 
@@ -96,9 +100,33 @@ struct HomeView: View {
                         }
 
                     }
+
+                case .scannedMachine(let machine, let gym):
+                    SwipeBackNavigation {
+                        MachineScreenContent(machine: machine, gym: gym)
+                    }
                 }
             }
         }
+        .onChange(of: machineVM.hasLoadedTag) { _, newValue in
+            if newValue,
+               let machine = machineVM.machine,
+               let gym = machineVM.gym {
+                navigationPath.append(.scannedMachine(machine: machine, gym: gym))
+                machineVM.hasLoadedTag = false
+            }
+        }
+    }
+
+    private func extractTag(from urlString: String) -> String? {
+        if let components = URLComponents(string: urlString) {
+            if let item = components.queryItems?.first(where: { $0.name.lowercased() == "tag" }) {
+                return item.value
+            }
+            let lastPath = components.path.split(separator: "/").last
+            return lastPath.map { String($0) }
+        }
+        return nil
     }
 }
 
