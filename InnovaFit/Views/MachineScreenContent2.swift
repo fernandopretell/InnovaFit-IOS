@@ -66,18 +66,7 @@ struct MachineScreenContent2: View {
             .padding(.vertical)
         }
         .background(Color.white)
-        .navigationTitle(machine.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: {
-                    dismiss()
-                }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.black)
-                }
-            }
-        }
+        .preferredColorScheme(.light)
     }
 }
 
@@ -85,61 +74,73 @@ struct VideoRowView: View {
     let video: Video
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            ZStack(alignment: .center) {
-                AsyncImage(url: URL(string: video.cover)) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 100, height: 80)
-                        .clipped()
+        VStack {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack(alignment: .center) {
+                    AsyncImage(url: URL(string: video.cover)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 100, height: 80)
+                            .clipped()
+                            .cornerRadius(8)
+                    } placeholder: {
+                        Color.gray.opacity(0.1)
+                            .frame(width: 100, height: 80)
+                            .cornerRadius(8)
+                    }
+
+                    // Capa oscura
+                    Rectangle()
+                        .foregroundColor(.black)
+                        .opacity(0.3)
                         .cornerRadius(8)
-                } placeholder: {
-                    Color.gray.opacity(0.1)
                         .frame(width: 100, height: 80)
-                        .cornerRadius(8)
+
+                    Image(systemName: "play.fill")
+                        .foregroundColor(Color.accentColor.opacity(0.7))
+                        .padding(6)
+                        .background(Color.gray.opacity(0.7))
+                        .clipShape(Circle())
+                        .padding(6)
                 }
 
-                // Icono Play gris claro
-                Image(systemName: "play.fill")
-                    .foregroundColor(Color.accentColor.opacity(0.4))
-                    .padding(6)
-                    .background(.gray.opacity(0.4))
-                    .clipShape(Circle())
-                    .padding(6)
-            }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(video.title)
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(Color.textSubtitle)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text(video.title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.black)
+                    ForEach(video.musclesWorked.sorted(by: { $0.value.weight > $1.value.weight }), id: \.key) { key, value in
+                        HStack {
+                            Text(key)
+                                .font(.caption)
+                                .foregroundColor(Color.textBody)
 
-                ForEach(video.musclesWorked.sorted(by: { $0.value.weight > $1.value.weight }), id: \.key) { key, value in
-                    HStack {
-                        Text(key)
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                            Spacer()
 
-                        Spacer()
-
-                        Text("\(value.weight)%")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.black)
+                            Text("\(value.weight)%")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.black)
+                        }
                     }
                 }
-            }
 
-            Spacer()
+                Spacer()
+            }
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(Color.clear)
-        .cornerRadius(10)
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
+        .padding(.horizontal, 16)
     }
 }
-
 
 
 struct RoundedBottomShape2: Shape {
