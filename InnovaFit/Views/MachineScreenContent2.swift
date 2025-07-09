@@ -31,13 +31,13 @@ struct MachineScreenContent2: View {
                     // Capa oscura
                     Rectangle()
                         .foregroundColor(.black)
-                        .opacity(0.4)
+                        .opacity(0.3)
                         .cornerRadius(12)
                         .frame(height: 240)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(machine.name)
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.white)
 
                         Text("Tren inferior")
@@ -140,12 +140,12 @@ struct VideoRowView: View {
                             Text("\(value.weight)%")
                                 .font(.caption)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.black)
+                                .foregroundColor(Color.textSubtitle)
                         }
                     }
                 }
-
-                Spacer()
+                .frame(maxWidth: .infinity) // 👈 hace que los HStack se expandan completamente
+                //Spacer()
             }
         }
         .padding()

@@ -132,6 +132,7 @@ struct MachineCardView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(machine.name)
                         .font(.headline)
+                        .fontWeight(.bold)
                         .foregroundColor(.textTitle)
 
                     Text(machine.description)
