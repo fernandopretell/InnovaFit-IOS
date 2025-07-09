@@ -82,17 +82,18 @@ struct HomeView: View {
             .navigationDestination(for: NavigationRoute.self) { route in
                 switch route {
                 case .qrScanner:
+                    SwipeBackNavigation {
                         QRScannerView { scannedCode in
                             print("📦 Código escaneado: \(scannedCode)")
                             navigationPath.removeLast() // volver automáticamente
                         }
-                  
-                    .toolbar(.hidden, for: .navigationBar)
+                    }
 
                 case .machine(let machine):
                     if let gym = viewModel.userProfile?.gym {
-                        MachineScreenContent(machine: machine, gym: gym)
-                            .toolbar(.hidden, for: .navigationBar)
+                        SwipeBackNavigation {
+                            MachineScreenContent(machine: machine, gym: gym)
+                        }
 
                     }
                 }
