@@ -1,34 +1,42 @@
 import SwiftUI
 
+// MARK: - Componente principal
 struct SwipeBackNavigation<Content: View>: UIViewControllerRepresentable {
     let content: Content
+    var hidesNavigationBar: Bool
 
-    init(@ViewBuilder content: () -> Content) {
+    init(hidesNavigationBar: Bool = true, @ViewBuilder content: () -> Content) {
         self.content = content()
+        self.hidesNavigationBar = hidesNavigationBar
     }
 
-    func makeUIViewController(context: Context) -> UIHostingController<Content> {
-        let hosting = UIHostingController(rootView: content)
-        hosting.view.backgroundColor = .clear
-        return hosting
+    func makeUIViewController(context: Context) -> HostingWithSwipeBack<Content> {
+        let controller = HostingWithSwipeBack(rootView: content)
+        controller.hidesNavigationBar = hidesNavigationBar
+        return controller
     }
 
-    func updateUIViewController(_ uiViewController: UIHostingController<Content>, context: Context) {
+    func updateUIViewController(_ uiViewController: HostingWithSwipeBack<Content>, context: Context) {
         uiViewController.rootView = content
-
-        if let navigationController = uiViewController.navigationController {
-            navigationController.setNavigationBarHidden(true, animated: false)
-            navigationController.interactivePopGestureRecognizer?.delegate = context.coordinator
-        }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
-
-    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-            true
-        }
     }
 }
+
+// MARK: - Subclase de UIHostingController para aplicar swipe back y ocultar la barra
+class HostingWithSwipeBack<Content: View>: UIHostingController<Content>, UIGestureRecognizerDelegate {
+    var hidesNavigationBar: Bool = true
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        if let nav = navigationController {
+            nav.setNavigationBarHidden(hidesNavigationBar, animated: animated)
+            nav.interactivePopGestureRecognizer?.delegate = self
+        }
+    }
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        // Evita gesto en la raíz del stack
+        navigationController?.viewControllers.count ?? 0 > 1
+    }
+}
+
