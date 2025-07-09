@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 import AudioToolbox
 
+
 struct QRScannerView: UIViewControllerRepresentable {
     var onFound: (String) -> Void
 
@@ -15,16 +16,26 @@ struct QRScannerView: UIViewControllerRepresentable {
         return controller
     }
 
-    func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) { }
+    func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {}
 
     class Coordinator: NSObject, ScannerViewControllerDelegate {
         let parent: QRScannerView
-        init(parent: QRScannerView) { self.parent = parent }
+        private var hasScanned = false
+
+        init(parent: QRScannerView) {
+            self.parent = parent
+        }
+
         func didFind(code: String) {
-            parent.onFound(code)
+            guard !hasScanned else { return }
+            hasScanned = true
+            DispatchQueue.main.async {
+                self.parent.onFound(code)
+            }
         }
     }
 }
+
 
 protocol ScannerViewControllerDelegate: AnyObject {
     func didFind(code: String)
@@ -169,7 +180,7 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
     }
     
     private func playBeepSound() {
-        AudioServicesPlaySystemSound(SystemSoundID(1108)) // sonido "confirmation"
+        AudioServicesPlaySystemSound(SystemSoundID(1107)) // sonido "confirmation"
     }
     
     class PaddedLabel: UILabel {

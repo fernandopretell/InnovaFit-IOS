@@ -4,7 +4,7 @@ import FirebaseAuth
 struct HomeView: View {
     @ObservedObject var viewModel: AuthViewModel
     @StateObject private var machineVM = MachineViewModel()
-    @State private var navigationPath = NavigationPath()
+    @State private var navigationPath: [NavigationRoute] = []
 
     enum NavigationRoute: Hashable, Codable {
         case qrScanner
@@ -87,7 +87,7 @@ struct HomeView: View {
                     SwipeBackNavigation {
                         QRScannerView { scannedCode in
                             print("📦 Código escaneado: \(scannedCode)")
-                            navigationPath.removeLast()
+                            //navigationPath.removeLast()
                             if let tag = extractTag(from: scannedCode) {
                                 machineVM.loadDataFromTag(tag)
                             }
@@ -105,8 +105,8 @@ struct HomeView: View {
             if newValue,
                let machine = machineVM.machine,
                let gym = machineVM.gym {
-                navigationPath.append(.machine(machine: machine, gym: gym))
-                machineVM.hasLoadedTag = false
+                navigationPath = [.machine(machine: machine, gym: gym)] // reemplaza ruta
+                machineVM.hasLoadedTag = false // resetea para futuros escaneos
             }
         }
     }
