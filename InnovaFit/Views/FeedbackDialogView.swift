@@ -6,129 +6,148 @@ struct FeedbackDialogView: View {
     let gymColorHex: String
     var onDismiss: () -> Void
     var onFeedbackSent: () -> Void
-
-    @State private var rating = 3
-    @State private var selectedOption = "Sí, me encanta"
-    @State private var comment = ""
-
-    let options = [
+    
+    @State private var rating: Int = 3
+    @State private var selectedOption: String = "Sí, me encanta"
+    @State private var comment: String = ""
+    
+    private let options = [
         "Sí, me encanta",
         "Sí, pero más largos",
         "No lo necesito",
         "No entendí bien el video"
     ]
-
+    
     var body: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 8){
-                Text("¡Tu opinión importa!")
-                    .font(.title)
-                    .fontWeight(.bold)
-
-                Text("Ayúdanos a mejorar InnovaFit")
-                    .font(.subheadline)
-                    .foregroundColor(.black)
-            }
-
-            Text("1. ¿Qué tan claro fue el video?")
-                .fontWeight(.semibold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            StarRatingView(rating: $rating)
-
-            Text("2. ¿Te gustaría ver más ejercicios así?")
-                .fontWeight(.semibold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            OptionsSelectorView(options: options, selectedOption: $selectedOption)
-
-            Text("3. ¿Qué mejorarías del video o del sistema?")
-                .fontWeight(.semibold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            TextEditor(text: $comment)
-                .frame(height: 100)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                )
-
-            Button(action: submitFeedback) {
-                Text("Enviar")
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, minHeight: 48) // ancho completo y alto mínimo fijo
-                    .background(Color(hex: gymColorHex))
-                    .foregroundColor(.black)
-                    .cornerRadius(12)
-                    .padding(.top, 8)
-            }
-
-            .foregroundColor(.gray)
+        VStack(spacing: 26) {
+            headerSection
+            ratingSection
+            optionsSection
+            commentSection
+            submitButton
         }
-        .padding()
+        .padding(24)
         .background(Color.white)
-        .cornerRadius(16)
+        .cornerRadius(24)
+        .shadow(color: .black.opacity(0.1), radius: 12, x: 0, y: 4)
         .padding()
+        .preferredColorScheme(.light)
     }
-
-    func submitFeedback() {
-        let db = Firestore.firestore()
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        formatter.timeZone = TimeZone.current // o TimeZone(abbreviation: "UTC") si lo preferís
-        let readableTimestamp = formatter.string(from: Date())
-        
-        let data: [String: Any] = [
-            "timestamp": readableTimestamp,
-            "rating": rating,
-            "answer": selectedOption,
-            "comment": comment,
-            "gymId": gymId,
-            "os": "IOS"
-        ]
-        
-        db.collection("feedback").addDocument(data: data) { error in
-            if error == nil {
-                onFeedbackSent()
-                onDismiss()
+    
+    private var headerSection: some View {
+        VStack(spacing: 4) {
+            Text("¡Tú opinión nos importa!")
+                .font(.title3)
+                .fontWeight(.heavy)
+                .foregroundColor(Color.textTitle)
+            
+            Text("Ayúdanos a mejorar Innovafit")
+                .font(.subheadline)
+                .foregroundColor(Color.textBody)
+        }
+        .padding(.top, 12)
+    }
+    
+    private var ratingSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("¿Qué tan claro fue el video?")
+                .font(.subheadline)
+                .fontWeight(.heavy)
+                .foregroundColor(Color.textSubtitle)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            HStack(spacing: 8) {
+                ForEach(1...5, id: \.self) { index in
+                    Image(systemName: index <= rating ? "star.fill" : "star")
+                        .foregroundColor(index <= rating ? Color.accentColor : .gray)
+                        .onTapGesture {
+                            rating = index
+                        }
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .center)
         }
     }
-}
-
-
-struct StarRatingView: View {
-    @Binding var rating: Int
-
-    var body: some View {
-        HStack {
-            ForEach(1...5, id: \.self) { star in
-                Image(systemName: star <= rating ? "star.fill" : "star")
-                    .foregroundColor(.yellow)
-                    .onTapGesture {
-                        rating = star
+    
+    private var optionsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("¿Te gustaría ver más videos así?")
+                .font(.subheadline)
+                .fontWeight(.heavy)
+                .foregroundColor(Color.textSubtitle)
+            
+            ForEach(options, id: \.self) { option in
+                let isSelected = selectedOption == option
+                
+                HStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .strokeBorder(
+                                isSelected ? Color(hex: gymColorHex) : Color.gray,
+                                lineWidth: 3
+                            )
+                            .frame(width: 20, height: 20)
+                        
+                        if isSelected {
+                            Circle()
+                                .fill(Color.textTitle)
+                                .frame(width: 10, height: 10)
+                        }
                     }
+                    
+                    Text(option)
+                        .font(.body)
+                        .fontWeight(isSelected ? .bold : .semibold)
+                        .foregroundColor(isSelected ? .black : Color.black)
+                    
+                    Spacer()
+                }
+                .padding()
+                .background(isSelected ? Color(hex: "#FFF8D6") : Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSelected ? Color(hex: "#FFD600") : Color(hex: "#D9D9D9"), lineWidth: 1)
+                )
+                .cornerRadius(12)
+                .onTapGesture {
+                    selectedOption = option
+                }
             }
         }
     }
-}
-
-struct OptionsSelectorView: View {
-    let options: [String]
-    @Binding var selectedOption: String
-
-    var body: some View {
-        ForEach(options, id: \.self) { option in
-            HStack {
-                Image(systemName: selectedOption == option ? "largecircle.fill.circle" : "circle")
-                    .foregroundColor(.black)
-                Text(option)
-            }
-            .onTapGesture {
-                selectedOption = option
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+    
+    private var commentSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("¿Qué mejorarías del video o del sistema?")
+                .font(.subheadline)
+                .fontWeight(.heavy)
+                .foregroundColor(Color.textSubtitle)
+            
+            TextField("", text: $comment, prompt: Text("Escribe tu comentario aquí…")
+                .foregroundColor(Color.textPlaceholder)
+                .font(.body))
+            .padding(12)
+            .background(Color.white)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            )
+        }
+    }
+    
+    private var submitButton: some View {
+        Button(action: {
+            print("📤 Feedback enviado: \(rating) stars, option: \(selectedOption), comment: \(comment)")
+            onFeedbackSent()
+        }) {
+            Text("Enviar")
+                .font(.headline)
+                .fontWeight(.heavy)
+                .foregroundColor(Color.textTitle)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color(hex: gymColorHex))
+                .cornerRadius(28)
         }
     }
 }

@@ -22,7 +22,7 @@ extension Color {
 
 extension Color {
     static let innovaBackground = Color(hex: "#0F0F0F") // negro suave
-    static let innovaYellow     = Color(hex: "#FFD600") // amarillo marca
+    static let innovaYellow     = Color(hex: "#FDD835") // amarillo marca
     
     static let textTitle        = Color(hex: "#111111")
     static let textSubtitle     = Color(hex: "#3C3C3C")

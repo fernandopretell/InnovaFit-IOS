@@ -16,71 +16,100 @@ struct MachineScreenContent2: View {
     @State private var showToast = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
+        ZStack {
+            Color.white.ignoresSafeArea()
 
-                // Imagen principal con overlay y título
-                ZStack(alignment: .bottomLeading) {
-                    AsyncImage(url: URL(string: machine.imageUrl)) { image in
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 240)
-                            .clipped()
+            ScrollView {
+                VStack(spacing: 16) {
+
+                    // Imagen principal con overlay y título
+                    ZStack(alignment: .bottomLeading) {
+                        AsyncImage(url: URL(string: machine.imageUrl)) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 240)
+                                .clipped()
+                                .cornerRadius(12)
+                        } placeholder: {
+                            Color.gray.opacity(0.1)
+                                .frame(height: 240)
+                                .cornerRadius(12)
+                        }
+
+                        Rectangle()
+                            .foregroundColor(.black)
+                            .opacity(0.3)
                             .cornerRadius(12)
-                    } placeholder: {
-                        Color.gray.opacity(0.1)
                             .frame(height: 240)
-                            .cornerRadius(12)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(machine.name)
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.white)
+
+                            Text("Tren inferior")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.85))
+                        }
+                        .padding()
                     }
+                    .padding(.horizontal)
 
-                    // Capa oscura
-                    Rectangle()
-                        .foregroundColor(.black)
-                        .opacity(0.3)
-                        .cornerRadius(12)
-                        .frame(height: 240)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(machine.name)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.white)
-
-                        Text("Tren inferior")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.85))
+                    // Descripción
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(machine.description)
+                            .font(.body)
+                            .foregroundColor(.black)
+                            .lineLimit(nil)
                     }
-                    .padding()
-                }
-                .padding(.horizontal)
+                    .padding(.horizontal)
 
-                // Descripción
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(machine.description)
-                        .font(.body)
-                        .foregroundColor(.black)
-                        .lineLimit(nil)
-                }
-                .padding(.horizontal)
-
-                // Lista de videos sugeridos
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(machine.defaultVideos, id: \.id) { video in
-                        VideoRowView(video: video) {
-                            selectedVideo = video
+                    // Lista de videos sugeridos
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(machine.defaultVideos, id: \.id) { video in
+                            VideoRowView(video: video) {
+                                selectedVideo = video
+                            }
                         }
                     }
                 }
+                .padding(.vertical)
             }
-            .padding(.vertical)
+
+            // Feedback Modal Flotante
+            if showFeedbackDialog {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+
+                FeedbackDialogView(
+                    gymId: gym.id ?? "gym_001",
+                    gymColorHex: gym.safeColor,
+                    onDismiss: { dismissFeedback() },
+                    onFeedbackSent: { dismissFeedback() }
+                )
+                .transition(.scale.combined(with: .opacity))
+                .zIndex(1)
+            }
+
+            // Toast
+            if showToast {
+                VStack {
+                    ToastView2(message: "¡Gracias por tus comentarios!")
+                        .padding(.top, 50)
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(10)
+            }
         }
-        .background(Color.white)
         .preferredColorScheme(.light)
         .fullScreenCover(item: $selectedVideo) { video in
             if (video.segments ?? []).isEmpty {
                 VideoPlayerView(video: video) {
                     selectedVideo = nil
-                    if shouldShowFeedback(feedbackFlags) {
+                    if shouldShowFeedback2(feedbackFlags) {
                         showFeedbackDialog = true
                     }
                 }
@@ -90,53 +119,62 @@ struct MachineScreenContent2: View {
                     gymColor: Color(hex: gym.safeColor),
                     onDismiss: {
                         selectedVideo = nil
-                        if shouldShowFeedback(feedbackFlags) {
+                        if shouldShowFeedback2(feedbackFlags) {
                             showFeedbackDialog = true
                         }
                     },
                     onAllSegmentsFinished: {
-                        if shouldShowFeedback(feedbackFlags) {
+                        if shouldShowFeedback2(feedbackFlags) {
                             showFeedbackDialog = true
                         }
                     }
                 )
             }
         }
-        .sheet(isPresented: $showFeedbackDialog) {
-            FeedbackDialogView(
-                gymId: gym.id ?? "gym_001",
-                gymColorHex: gym.safeColor,
-                onDismiss: { dismissFeedback() },
-                onFeedbackSent: { dismissFeedback() }
-            )
-        }
         .task(id: "\(hasWatchedAllVideos)-\(feedbackFlags.first?.isShowFeedback == true)") {
-            if shouldShowFeedback(feedbackFlags) {
+            if shouldShowFeedback2(feedbackFlags) {
                 showFeedbackDialog = true
             }
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                if shouldShowFeedback(feedbackFlags) {
+                if shouldShowFeedback2(feedbackFlags) {
                     showFeedbackDialog = true
                 }
             }
         }
-        .overlay(
-            Group {
-                if showToast {
-                    VStack {
-                        ToastView2(message: "¡Gracias por tus comentarios!")
-                            .padding(.top, 50)
-                        Spacer()
-                    }
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .zIndex(10)
+    }
+
+    private func dismissFeedback() {
+        showFeedbackDialog = false
+
+        guard feedbackFlags.isEmpty else {
+            print("ℹ️ Feedback ya registrado previamente.")
+            return
+        }
+
+        let flag = ShowFeedback(isShowFeedback: true)
+        context.insert(flag)
+
+        do {
+            try context.save()
+            print("✅ Feedback marcado como mostrado en el dispositivo.")
+
+            withAnimation {
+                showToast = true
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation {
+                    showToast = false
                 }
             }
-        )
+        } catch {
+            print("⚠️ Error al guardar ShowFeedback: \(error)")
+        }
     }
 }
+
 
 struct VideoRowView: View {
     let video: Video
@@ -252,11 +290,11 @@ struct ToastView2: View {
 }
 
 private extension MachineScreenContent2 {
-    func shouldShowFeedback(_ flags: [ShowFeedback]) -> Bool {
+    func shouldShowFeedback2(_ flags: [ShowFeedback]) -> Bool {
         hasWatchedAllVideos && flags.first?.isShowFeedback != true
     }
 
-    func dismissFeedback() {
+    func dismissFeedback2() {
         showFeedbackDialog = false
 
         guard feedbackFlags.isEmpty else { return }
