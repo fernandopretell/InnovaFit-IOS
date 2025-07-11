@@ -202,7 +202,7 @@ struct VideoRowView: View {
 
                     // Capa blur
                     RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.white.opacity(0.2)) // 👈 controla la intensidad del blur
+                        .fill(Color.white.opacity(0.05)) // 👈 controla la intensidad del blur
                             .blur(radius: 2)
                             .frame(width: 100, height: 80)
 
@@ -219,20 +219,20 @@ struct VideoRowView: View {
                     Text(video.title)
                         .font(.subheadline)
                         .fontWeight(.bold)
-                        .foregroundColor(Color.textSubtitle)
+                        .foregroundColor(.textTitle)
 
                     ForEach(video.musclesWorked.sorted(by: { $0.value.weight > $1.value.weight }), id: \.key) { key, value in
                         HStack {
                             Text(key)
                                 .font(.caption)
-                                .foregroundColor(Color.textBody)
+                                .foregroundColor(.textBody)
 
                             Spacer()
 
                             Text("\(value.weight)%")
                                 .font(.caption)
                                 .fontWeight(.semibold)
-                                .foregroundColor(Color.textSubtitle)
+                                .foregroundColor(.textTitle)
                         }
                     }
                 }
