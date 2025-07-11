@@ -21,7 +21,7 @@ struct MachineScreenContent2: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-
+                    
                     // Imagen principal con overlay y título
                     ZStack(alignment: .bottomLeading) {
                         AsyncImage(url: URL(string: machine.imageUrl)) { image in
@@ -36,26 +36,29 @@ struct MachineScreenContent2: View {
                                 .frame(height: 240)
                                 .cornerRadius(12)
                         }
-
-                        Rectangle()
-                            .foregroundColor(.black)
-                            .opacity(0.3)
-                            .cornerRadius(12)
-                            .frame(height: 240)
-
+                        
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.black.opacity(0.8), .clear]),
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
+                        .cornerRadius(12)
+                        .frame(height: 120)
+                        
+                        
                         VStack(alignment: .leading, spacing: 4) {
                             Text(machine.name)
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.white)
-
-                            Text("Tren inferior")
+                            
+                            Text(machine.type)
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.85))
                         }
                         .padding()
                     }
                     .padding(.horizontal)
-
+                    
                     // Descripción
                     VStack(alignment: .leading, spacing: 8) {
                         Text(machine.description)
@@ -64,7 +67,7 @@ struct MachineScreenContent2: View {
                             .lineLimit(nil)
                     }
                     .padding(.horizontal)
-
+                    
                     // Lista de videos sugeridos
                     VStack(alignment: .leading, spacing: 12) {
                         ForEach(machine.defaultVideos, id: \.id) { video in
@@ -197,12 +200,12 @@ struct VideoRowView: View {
                             .cornerRadius(8)
                     }
 
-                    // Capa oscura
-                    Rectangle()
-                        .foregroundColor(.black)
-                        .opacity(0.3)
-                        .cornerRadius(8)
-                        .frame(width: 100, height: 80)
+                    // Capa blur
+                    RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.white.opacity(0.2)) // 👈 controla la intensidad del blur
+                            .blur(radius: 2)
+                            .frame(width: 100, height: 80)
+
 
                     Image(systemName: "play.fill")
                         .foregroundColor(Color.accentColor.opacity(0.7))
@@ -320,6 +323,7 @@ struct MachineScreenContent_Previews2: PreviewProvider {
         let machine = Machine(
             id: "gym_001",
             name: "LEG PRESS",
+            type: "Tren inferior",
             description: "Ideal para trabajar los cuádriceps y glúteos.",
             imageUrl: "",
             defaultVideos: [
