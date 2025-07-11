@@ -5,101 +5,72 @@ struct MainTabView: View {
     @ObservedObject var viewModel: AuthViewModel
     @StateObject private var machineVM = MachineViewModel()
     @State private var selectedTab: Tab = .home
-    @State private var showScanner = false
-    @State private var animateScanner = false
+    @State private var navigationPath: [TabsRoute] = []
+    @State private var showErrorAlert = false
 
     enum Tab {
         case home, history
     }
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .bottom) {
-                Group {
-                    switch selectedTab {
-                    case .home:
-                        HomeView(viewModel: viewModel)
-                    case .history:
-                        MuscleHistoryView()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                // Custom Tab Bar
-                HStack(alignment: .bottom) {
-                    TabBarItem(
-                        label: "Inicio",
-                        iconName: "house.fill",
-                        isSelected: selectedTab == .home,
-                        action: { withAnimation(.spring()) { selectedTab = .home } }
-                    )
-
-                    VStack(spacing: 4) {
-                        Button {
-                            animateScanner = true
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                showScanner = true
-                                animateScanner = false
-                            }
-                        } label: {
-                            ZStack {
-                                /*Circle()
-                                 .fill(Color(hex: "#FFD600"))
-                                 .frame(width: 64, height: 64)
-                                 .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                                 .scaleEffect(animateScanner ? 1.1 : 1.0)
-                                 .animation(.spring(response: 0.3, dampingFraction: 0.5), value: animateScanner)
-                                 
-                                 Image(systemName: "qrcode.viewfinder")
-                                 .resizable()
-                                 .scaledToFit()
-                                 .frame(width: 28, height: 28)
-                                 .foregroundColor(.white)*/
-                                
-                                Image(systemName: "qrcode.viewfinder") // "plus_icon"
-                                    .resizable()
-                                    .scaledToFit()
-                                    .padding()
-                                    .frame(width: 60, height: 60)
-                                    .foregroundStyle(Color.black)
-                                    .background {
-                                        Circle()
-                                            .fill(Color.accentColor) // custom64B054Color
-                                            .shadow(radius: 3)
-                                    }
-                            }.padding(.top, 9)
+        NavigationStack(path: $navigationPath) {
+            GeometryReader { proxy in
+                ZStack(alignment: .bottom) {
+                    Group {
+                        switch selectedTab {
+                        case .home:
+                            HomeView(
+                                viewModel: viewModel,
+                                onSelectMachine: { machine, gym in
+                                    navigationPath.append(.machine(machine: machine, gym: gym))
+                                }
+                            )
+                        case .history:
+                            MuscleHistoryView()
                         }
-
-                        Text("Escanear")
-                            .font(.footnote)
-                            .foregroundColor(Color.black)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    TabBarItem(
-                        label: "Historial",
-                        iconName: "clock.arrow.circlepath",
-                        isSelected: selectedTab == .history,
-                        action: { withAnimation(.spring()) { selectedTab = .history } }
-                    )
-                }
-                .font(.footnote)
-                .padding(.horizontal, 10)
-                .padding(.bottom, max(0, 8 - proxy.safeAreaInsets.bottom))
-                .background {
-                    TabBarShape()
-                        .fill(.white)
-                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: -2)
-                        .ignoresSafeArea()
-                }
-                .frame(maxHeight: .infinity, alignment: .bottom)
+                    // Custom Tab Bar
+                    HStack(alignment: .bottom) {
+                        TabBarItem(
+                            label: "Inicio",
+                            iconName: "house.fill",
+                            isSelected: selectedTab == .home,
+                            action: { withAnimation(.spring()) { selectedTab = .home } }
+                        )
 
-                if showScanner {
-                    Color.black.opacity(0.4).ignoresSafeArea()
+                        ScannerTabButton(proxy: proxy)
+
+                        TabBarItem(
+                            label: "Historial",
+                            iconName: "clock.arrow.circlepath",
+                            isSelected: selectedTab == .history,
+                            action: { withAnimation(.spring()) { selectedTab = .history } }
+                        )
+                    }
+                    .font(.footnote)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, max(0, 8 - proxy.safeAreaInsets.bottom))
+                    .background {
+                        TabBarShape()
+                            .fill(.white)
+                            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: -2)
+                            .ignoresSafeArea()
+                    }
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                }
+            }
+            .navigationDestination(for: TabsRoute.self) { route in
+                switch route {
+                case .machine(let machine, let gym):
+                    SwipeBackNavigation {
+                        MachineScreenContent2(machine: machine, gym: gym)
+                    }
+                case .qrScanner:
                     SwipeBackNavigation {
                         QRScannerView { scannedCode in
                             print("📦 Código escaneado: \(scannedCode)")
-                            //navigationPath.removeLast()
                             if let tag = extractTag(from: scannedCode) {
                                 machineVM.loadDataFromTag(tag)
                             }
@@ -107,9 +78,54 @@ struct MainTabView: View {
                     }
                 }
             }
+            .onChange(of: machineVM.hasLoadedTag) { _, newValue in
+                if newValue {
+                    if let machine = machineVM.machine, let gym = machineVM.gym {
+                        navigationPath.append(.machine(machine: machine, gym: gym))
+                    } else {
+                        showErrorAlert = true
+                    }
+                    machineVM.hasLoadedTag = false
+                }
+            }
+            .alert("No se encontró una máquina activa para este código.", isPresented: $showErrorAlert) {
+                Button("Aceptar", role: .cancel) {}
+            }
         }
     }
     
+    private func ScannerTabButton(proxy: GeometryProxy) -> some View {
+        VStack(spacing: 4) {
+            Button {
+                navigationPath.append(.qrScanner)
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(Color.accentColor)
+                        .frame(width: 64, height: 64)
+                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+
+                    Image(systemName: "qrcode.viewfinder")
+                        .resizable()
+                        .renderingMode(.template)
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
+                        .foregroundColor(.black)
+                }
+            }
+            .offset(y: scannerYOffset(proxy: proxy))
+
+            Text("Escanear")
+                .font(.footnote)
+                .foregroundColor(Color.black)
+        }
+    }
+    
+    private func scannerYOffset(proxy: GeometryProxy) -> CGFloat {
+        let isiPhoneWithIsland = proxy.safeAreaInsets.bottom > 20
+        return isiPhoneWithIsland ? 4 : -8
+    }
+
     private func extractTag(from urlString: String) -> String? {
         if let components = URLComponents(string: urlString) {
             if let item = components.queryItems?.first(where: { $0.name.lowercased() == "tag" }) {
@@ -121,6 +137,7 @@ struct MainTabView: View {
         return nil
     }
 }
+
 
 struct TabBarItem: View {
     let label: String
