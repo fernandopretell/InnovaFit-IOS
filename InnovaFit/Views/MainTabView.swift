@@ -7,6 +7,12 @@ struct MainTabView: View {
     @State private var selectedTab: Tab = .home
     @State private var showScanner = false
     @State private var animateScanner = false
+    @State private var scannerPath: [ScannerRoute] = []
+
+    enum ScannerRoute: Hashable, Codable {
+        case qrScanner
+        case machine(machine: Machine, gym: Gym)
+    }
 
     enum Tab {
         case home, history
@@ -95,14 +101,36 @@ struct MainTabView: View {
                 .frame(maxHeight: .infinity, alignment: .bottom)
 
                 if showScanner {
-                    Color.black.opacity(0.4).ignoresSafeArea()
-                    SwipeBackNavigation {
-                        QRScannerView { scannedCode in
-                            print("📦 Código escaneado: \(scannedCode)")
-                            //navigationPath.removeLast()
-                            if let tag = extractTag(from: scannedCode) {
-                                machineVM.loadDataFromTag(tag)
+                    NavigationStack(path: $scannerPath) {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+                            .navigationDestination(for: ScannerRoute.self) { route in
+                                switch route {
+                                case .qrScanner:
+                                    SwipeBackNavigation {
+                                        QRScannerView { scannedCode in
+                                            if let tag = extractTag(from: scannedCode) {
+                                                machineVM.loadDataFromTag(tag)
+                                            }
+                                        }
+                                    }
+                                case .machine(let machine, let gym):
+                                    SwipeBackNavigation {
+                                        MachineScreenContent2(machine: machine, gym: gym)
+                                    }
+                                }
                             }
+                    }
+                    .onAppear { scannerPath = [.qrScanner] }
+                    .onChange(of: scannerPath) { _, newValue in
+                        if newValue.isEmpty { showScanner = false }
+                    }
+                    .onChange(of: machineVM.hasLoadedTag) { _, newValue in
+                        if newValue,
+                           let machine = machineVM.machine,
+                           let gym = machineVM.gym {
+                            scannerPath = [.machine(machine: machine, gym: gym)]
+                            machineVM.hasLoadedTag = false
                         }
                     }
                 }
