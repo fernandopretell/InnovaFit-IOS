@@ -78,7 +78,7 @@ struct MainTabView: View {
 
                     TabBarItem(
                         label: "Historial",
-                        iconName: "chart.bar.fill",
+                        iconName: "clock.arrow.circlepath",
                         isSelected: selectedTab == .history,
                         action: { withAnimation(.spring()) { selectedTab = .history } }
                     )
