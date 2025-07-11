@@ -138,7 +138,21 @@ struct FeedbackDialogView: View {
     private var submitButton: some View {
         Button(action: {
             print("📤 Feedback enviado: \(rating) stars, option: \(selectedOption), comment: \(comment)")
-            onFeedbackSent()
+            FeedbackRepository.saveFeedback(
+                gymId: gymId,
+                rating: rating,
+                answer: selectedOption,
+                comment: comment
+            ) { result in
+                switch result {
+                case .success:
+                    print("✅ Feedback guardado en Firestore")
+                    onFeedbackSent()
+                case .failure(let error):
+                    print("⚠️ Error al guardar feedback: \(error)")
+                    onFeedbackSent()
+                }
+            }
         }) {
             Text("Enviar")
                 .font(.headline)
