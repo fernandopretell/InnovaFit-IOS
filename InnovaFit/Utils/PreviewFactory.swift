@@ -4,6 +4,7 @@ struct PreviewFactory {
         Machine(
             id: "gym_001",
             name: "Prensa de Pierna",
+            type: "Tren inferior",
             description: "Ideal para trabajar los cuádriceps y glúteos.",
             imageUrl: "",
             defaultVideos: [

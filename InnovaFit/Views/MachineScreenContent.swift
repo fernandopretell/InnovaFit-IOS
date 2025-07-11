@@ -257,6 +257,7 @@ struct MachineScreenContent_Previews: PreviewProvider {
         let machine = Machine(
             id: "gym_001",
             name: "LEG PRESS",
+            type: "Tren inferior",
             description: "Ideal para trabajar los cuádriceps y glúteos.",
             imageUrl: "",
             defaultVideos: [

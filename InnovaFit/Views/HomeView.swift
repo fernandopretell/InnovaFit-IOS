@@ -65,7 +65,7 @@ struct HomeView: View {
                 }
 
                 // 📷 Botón flotante escáner QR
-                Button(action: {
+                /*Button(action: {
                     navigationPath.append(NavigationRoute.qrScanner)
                 }) {
                     HStack(spacing: 8) {
@@ -78,7 +78,7 @@ struct HomeView: View {
                     .foregroundColor(.black)
                     .cornerRadius(28)
                 }
-                .padding()
+                .padding()*/
             }
             .background(Color.white.ignoresSafeArea())
             .navigationDestination(for: NavigationRoute.self) { route in

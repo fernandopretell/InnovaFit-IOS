@@ -13,7 +13,7 @@ struct ContentView: View {
             case .register:
                 RegisterView(viewModel: authViewModel)
             case .home:
-                HomeView(viewModel: authViewModel)
+                MainTabView(viewModel: authViewModel)
             }
         }
     }
