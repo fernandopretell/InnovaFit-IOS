@@ -45,6 +45,7 @@ struct SegmentedVideoPlayerView: View {
                     
                     Button(action: {
                                 dismiss()
+                                onDismiss()
                             }) {
                                 Text("×")
                                     .font(.system(size: 30))

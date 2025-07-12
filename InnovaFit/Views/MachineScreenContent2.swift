@@ -14,6 +14,8 @@ struct MachineScreenContent2: View {
     @Environment(\.modelContext) private var context
     @State private var showFeedbackDialog = false
     @State private var showToast = false
+    @State private var showLogDialog = false
+    @State private var videoToLog: Video?
 
     var body: some View {
         ZStack {
@@ -111,20 +113,24 @@ struct MachineScreenContent2: View {
         .fullScreenCover(item: $selectedVideo) { video in
             if (video.segments ?? []).isEmpty {
                 VideoPlayerView(video: video) {
+                    videoToLog = video
                     selectedVideo = nil
                     if shouldShowFeedback2(feedbackFlags) {
                         showFeedbackDialog = true
                     }
+                    showLogDialog = true
                 }
             } else {
                 SegmentedVideoPlayerView(
                     video: video,
                     gymColor: Color(hex: gym.safeColor),
                     onDismiss: {
+                        videoToLog = video
                         selectedVideo = nil
                         if shouldShowFeedback2(feedbackFlags) {
                             showFeedbackDialog = true
                         }
+                        showLogDialog = true
                     },
                     onAllSegmentsFinished: {
                         if shouldShowFeedback2(feedbackFlags) {
@@ -133,6 +139,27 @@ struct MachineScreenContent2: View {
                     }
                 )
             }
+        }
+        .alert(
+            "¿Deseas agregar este ejercicio a tu historial?",
+            isPresented: $showLogDialog
+        ) {
+            Button("Agregar") {
+                if let video = videoToLog {
+                    ExerciseLogRepository.registerLogIfNeeded(
+                        video: video,
+                        machine: machine
+                    ) { result in
+                        switch result {
+                        case .success(let created):
+                            print("✅ Log creado: \(created)")
+                        case .failure(let error):
+                            print("⚠️ Error al crear log: \(error)")
+                        }
+                    }
+                }
+            }
+            Button("Cancelar", role: .cancel) {}
         }
         .task(id: "\(hasWatchedAllVideos)-\(feedbackFlags.first?.isShowFeedback == true)") {
             if shouldShowFeedback2(feedbackFlags) {
