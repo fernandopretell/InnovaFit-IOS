@@ -14,6 +14,8 @@ struct MachineScreenContent: View {
     @State private var showToast = false
     @State private var selectedVideo: Video?
     @StateObject private var svgLoader = SVGImageLoader()
+    @State private var showLogDialog = false
+    @State private var videoToLog: Video?
 
     
     init(machine: Machine, gym: Gym) {
@@ -31,7 +33,10 @@ struct MachineScreenContent: View {
                         VideoCarouselView(
                             videos: machine.defaultVideos,
                             gymColor: gym.safeColor,
-                            onVideoDismissed: { _ in handleVideoDismiss() },
+                            onVideoDismissed: { video in
+                                videoToLog = video
+                                handleVideoDismiss()
+                            },
                             onVideoChanged: { video in
                                 print("🎞️ onVideoChanged -> \(video.title)")
                                 video.musclesWorked.forEach { key, value in
@@ -105,6 +110,27 @@ struct MachineScreenContent: View {
                             }
                         )
                     }
+                    .alert(
+                        "¿Deseas agregar este ejercicio a tu historial?",
+                        isPresented: $showLogDialog
+                    ) {
+                        Button("Agregar") {
+                            if let video = videoToLog {
+                                ExerciseLogRepository.registerLogIfNeeded(
+                                    video: video,
+                                    machine: machine
+                                ) { result in
+                                    switch result {
+                                    case .success(let created):
+                                        print("✅ Log creado: \(created)")
+                                    case .failure(let error):
+                                        print("⚠️ Error al crear log: \(error)")
+                                    }
+                                }
+                            }
+                        }
+                        Button("Cancelar", role: .cancel) {}
+                    }
                     .task(id: "\(hasWatchedAllVideos)-\(feedbackFlags.first?.isShowFeedback == true)") {
                         print("🔁 Task triggered with hasWatchedAllVideos: \(hasWatchedAllVideos), feedbackFlags: \(feedbackFlags)")
 
@@ -172,7 +198,10 @@ struct MachineScreenContent: View {
     
     func handleVideoDismiss() {
         print("↩️ Video dismiss detectado. hasWatchedAllVideos: \(hasWatchedAllVideos), flags: \(feedbackFlags)")
-        
+
+        // Mostrar diálogo para registrar el ejercicio
+        showLogDialog = true
+
         if shouldShowFeedback(feedbackFlags) {
             showFeedbackDialog = true
         }

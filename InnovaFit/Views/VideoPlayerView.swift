@@ -5,6 +5,8 @@ struct VideoPlayerView: View {
     let video: Video
     var onDismiss: () -> Void
 
+    @Environment(\.dismiss) private var dismiss
+
     @State private var queuePlayer: AVQueuePlayer?
     @State private var looper: AVPlayerLooper?
 
@@ -30,6 +32,7 @@ struct VideoPlayerView: View {
 
             // Botón de cierre
             Button(action: {
+                dismiss()
                 onDismiss()
             }) {
                 Image(systemName: "xmark.circle.fill")
