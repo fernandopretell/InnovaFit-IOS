@@ -16,6 +16,15 @@ struct MachineScreenContent2: View {
     @State private var showToast = false
     @State private var showLogDialog = false
     @State private var videoToLog: Video?
+    @State private var logOption: LogOption = .yes
+    @State private var showExerciseToast = false
+    
+    enum LogOption: String, CaseIterable, Identifiable {
+        case yes = "Sí, haré el ejercicio."
+        case no = "No, solo estaba explorando la app"
+        
+        var id: String { rawValue }
+    }
 
     var body: some View {
         ZStack {
@@ -23,12 +32,10 @@ struct MachineScreenContent2: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    
                     // Imagen principal con overlay y título
                     ZStack(alignment: .bottomLeading) {
                         AsyncImage(url: URL(string: machine.imageUrl)) { image in
-                            image
-                                .resizable()
+                            image.resizable()
                                 .scaledToFill()
                                 .frame(height: 240)
                                 .clipped()
@@ -38,7 +45,7 @@ struct MachineScreenContent2: View {
                                 .frame(height: 240)
                                 .cornerRadius(12)
                         }
-                        
+
                         LinearGradient(
                             gradient: Gradient(colors: [Color.black.opacity(0.8), .clear]),
                             startPoint: .bottom,
@@ -46,13 +53,11 @@ struct MachineScreenContent2: View {
                         )
                         .cornerRadius(12)
                         .frame(height: 120)
-                        
-                        
+
                         VStack(alignment: .leading, spacing: 4) {
                             Text(machine.name)
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.white)
-                            
                             Text(machine.type)
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.85))
@@ -60,16 +65,15 @@ struct MachineScreenContent2: View {
                         .padding()
                     }
                     .padding(.horizontal)
-                    
+
                     // Descripción
                     VStack(alignment: .leading, spacing: 8) {
                         Text(machine.description)
                             .font(.body)
                             .foregroundColor(.black)
-                            .lineLimit(nil)
                     }
                     .padding(.horizontal)
-                    
+
                     // Lista de videos sugeridos
                     VStack(alignment: .leading, spacing: 12) {
                         ForEach(machine.defaultVideos, id: \.id) { video in
@@ -87,7 +91,6 @@ struct MachineScreenContent2: View {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                     .transition(.opacity)
-
                 FeedbackDialogView(
                     gymId: gym.id ?? "gym_001",
                     gymColorHex: gym.safeColor,
@@ -111,26 +114,24 @@ struct MachineScreenContent2: View {
         }
         .preferredColorScheme(.light)
         .fullScreenCover(item: $selectedVideo) { video in
+            let dismissPlayer = {
+                selectedVideo = nil
+                if shouldShowFeedback2(feedbackFlags) {
+                    showFeedbackDialog = true
+                }
+                videoToLog = video
+                showLogDialog = true
+            }
             if (video.segments ?? []).isEmpty {
                 VideoPlayerView(video: video) {
-                    videoToLog = video
-                    selectedVideo = nil
-                    if shouldShowFeedback2(feedbackFlags) {
-                        showFeedbackDialog = true
-                    }
-                    showLogDialog = true
+                    dismissPlayer()
                 }
             } else {
                 SegmentedVideoPlayerView(
                     video: video,
                     gymColor: Color(hex: gym.safeColor),
                     onDismiss: {
-                        videoToLog = video
-                        selectedVideo = nil
-                        if shouldShowFeedback2(feedbackFlags) {
-                            showFeedbackDialog = true
-                        }
-                        showLogDialog = true
+                        dismissPlayer()
                     },
                     onAllSegmentsFinished: {
                         if shouldShowFeedback2(feedbackFlags) {
@@ -140,27 +141,97 @@ struct MachineScreenContent2: View {
                 )
             }
         }
-        .alert(
-            "¿Deseas agregar este ejercicio a tu historial?",
-            isPresented: $showLogDialog
-        ) {
-            Button("Agregar") {
-                if let video = videoToLog {
-                    ExerciseLogRepository.registerLogIfNeeded(
-                        video: video,
-                        machine: machine
-                    ) { result in
-                        switch result {
-                        case .success(let created):
-                            print("✅ Log creado: \(created)")
-                        case .failure(let error):
-                            print("⚠️ Error al crear log: \(error)")
+        .fullScreenCover(isPresented: $showLogDialog) {
+            GeometryReader { proxy in
+                ZStack(alignment: .bottom) {
+                    // Fondo negro translúcido
+                   
+
+                    // Bottom Sheet blanco full width & full bottom
+                    VStack(spacing: 16) {
+                        Capsule()
+                            .fill(Color.gray.opacity(0.4))
+                            .frame(width: 40, height: 6)
+                            .padding(.top, 8)
+
+                        Text("¿Vas a hacer este ejercicio ahora?")
+                            .font(.title3)
+                            .fontWeight(.black)
+                            .multilineTextAlignment(.center)
+
+                        Text("Si confirmas, lo agregaremos a tu historial de ejercicios realizados.")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+
+                        // Opciones tipo radio
+                        VStack(spacing: 12) {
+                            RadioOption(
+                                title: "Sí, haré el ejercicio",
+                                isSelected: logOption == .yes
+                            ) { logOption = .yes }
+
+                            RadioOption(
+                                title: "No, solo estaba explorando",
+                                isSelected: logOption == .no
+                            ) { logOption = .no }
                         }
+                        .padding(.horizontal)
+
+                        Spacer()
+
+                        Button {
+                            if logOption == .yes, let video = videoToLog {
+                                ExerciseLogRepository.registerLogIfNeeded(video: video, machine: machine) { _ in
+                                    // 1️⃣ Cierra el modal primero
+                                    showLogDialog = false
+                                    // 2️⃣ Muestra el toast después de cerrar el modal
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                        withAnimation {
+                                            showExerciseToast = true
+                                        }
+                                        // Oculta el toast automáticamente tras 2 segundos
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                            withAnimation {
+                                                showExerciseToast = false
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                showLogDialog = false
+                            }
+                        } label: {
+                            Text("Confirmar")
+                                .foregroundColor(.black)
+                                .fontWeight(.bold)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color(hex: gym.safeColor))
+                                .cornerRadius(12)
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, proxy.safeAreaInsets.bottom + 16)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                    .background(Color.white.ignoresSafeArea())
+                    .cornerRadius(16, corners: [.topLeft, .topRight])
+                    
+                    if showExerciseToast {
+                        VStack {
+                            Spacer()
+                            ToastView2(message: "¡Ejercicio registrado en tu historial!")
+                                .padding(.bottom, 60)
+                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(99)
                     }
                 }
             }
-            Button("Cancelar", role: .cancel) {}
         }
+
         .task(id: "\(hasWatchedAllVideos)-\(feedbackFlags.first?.isShowFeedback == true)") {
             if shouldShowFeedback2(feedbackFlags) {
                 showFeedbackDialog = true
@@ -177,27 +248,14 @@ struct MachineScreenContent2: View {
 
     private func dismissFeedback() {
         showFeedbackDialog = false
-
-        guard feedbackFlags.isEmpty else {
-            print("ℹ️ Feedback ya registrado previamente.")
-            return
-        }
-
+        guard feedbackFlags.isEmpty else { return }
         let flag = ShowFeedback(isShowFeedback: true)
         context.insert(flag)
-
         do {
             try context.save()
-            print("✅ Feedback marcado como mostrado en el dispositivo.")
-
-            withAnimation {
-                showToast = true
-            }
-
+            withAnimation { showToast = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                withAnimation {
-                    showToast = false
-                }
+                withAnimation { showToast = false }
             }
         } catch {
             print("⚠️ Error al guardar ShowFeedback: \(error)")
@@ -205,6 +263,52 @@ struct MachineScreenContent2: View {
     }
 }
 
+extension View {
+  func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+    clipShape(RoundedCorner(radius: radius, corners: corners))
+  }
+}
+
+struct RoundedCorner: Shape {
+  var radius: CGFloat
+  var corners: UIRectCorner
+  func path(in rect: CGRect) -> Path {
+    let path = UIBezierPath(
+      roundedRect: rect,
+      byRoundingCorners: corners,
+      cornerRadii: CGSize(width: radius, height: radius)
+    )
+    return Path(path.cgPath)
+  }
+}
+
+struct RadioOption: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(isSelected ? .yellow : .gray)
+                Text(title)
+                    .foregroundColor(.black)
+                Spacer()
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.yellow.opacity(0.2) : Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? Color.yellow : Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+            )
+        }
+    }
+}
 
 struct VideoRowView: View {
     let video: Video
