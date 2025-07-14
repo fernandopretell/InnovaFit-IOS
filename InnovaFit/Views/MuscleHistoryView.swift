@@ -25,7 +25,8 @@ struct MuscleHistoryView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Historial semanal")
-                .font(.title2.bold())
+                .font(.title)
+                .fontWeight(.heavy)
                 .foregroundColor(.textTitle)
             Text("Revisa qué grupos musculares has trabajado esta semana.")
                 .font(.subheadline)
@@ -34,9 +35,9 @@ struct MuscleHistoryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // Pie chart con leyenda a la derecha
+    // Pie chart con leyenda a la derecha y donut centrado verticalmente
     private var pieChartSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .center, spacing: 12) {
             Text("Distribución por grupo muscular")
                 .font(.headline)
                 .fontWeight(.bold)
@@ -47,27 +48,31 @@ struct MuscleHistoryView: View {
             GeometryReader { geo in
                 let cardHeight = geo.size.height
                 let cardWidth = geo.size.width
-                let donutSize = min(cardHeight * 0.90, cardWidth * 0.36) // ¡No más de 90% del alto ni 36% del ancho!
+                let donutSize = min(cardHeight * 0.82, cardWidth * 0.36) // Ajuste seguro
 
                 HStack(alignment: .center, spacing: 0) {
                     Spacer(minLength: 12) // Margen izquierdo
 
-                    ZStack {
-                        DonutChartView(
-                            segments: viewModel.donutSegments,
-                            total: viewModel.logs.count
-                        )
+                    VStack {
+                        Spacer()
+                        ZStack {
+                            DonutChartView(
+                                segments: viewModel.donutSegments,
+                                total: viewModel.logs.count
+                            )
+                        }
+                        .frame(width: donutSize, height: donutSize)
+                        Spacer()
                     }
-                    .frame(width: donutSize, height: donutSize)
+                    .frame(height: geo.size.height)
 
                     Spacer(minLength: 8) // Margen entre donut y leyenda
 
                     muscleLegend(for: viewModel)
                         .frame(width: cardWidth * 0.54, alignment: .trailing)
                 }
-
             }
-            .frame(height: 170) // O más si quieres aún más margen
+            .frame(height: 170)
             .clipped()
         }
         .padding()
@@ -80,8 +85,6 @@ struct MuscleHistoryView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
     }
 
-
-
     // Donut Chart (con texto en el centro)
     private func donutChart(for viewModel: MuscleHistoryViewModel) -> some View {
         ZStack {
@@ -90,44 +93,43 @@ struct MuscleHistoryView: View {
                 total: viewModel.logs.count
             )
         }
-        .frame(width: 130, height: 130)
     }
 
-    // Leyenda a la derecha (texto negro)
+    // Leyenda a la derecha (alineada pro)
     private func muscleLegend(for viewModel: MuscleHistoryViewModel) -> some View {
-        VStack(alignment: .leading, spacing: 18) { // <--- aquí cambio a .leading
+        VStack(alignment: .leading, spacing: 18) {
             ForEach(viewModel.muscleDistribution.prefix(4)) { item in
-                HStack(spacing: 8) {
+                HStack(spacing: 5) {
                     Circle()
                         .fill(item.color)
                         .frame(width: 12, height: 12)
                     Text("\(item.muscle) (\(item.percentString(total: viewModel.logs.count)))")
                         .font(.caption)
-                        .foregroundColor(item.color == Color(hex: "#E1E1E1") ? .gray : .black)
+                        .foregroundColor(item.color == Color(hex: "#F3F4F6") ? .black : .black)
                 }
             }
             if viewModel.muscleDistribution.count > 4 {
                 let othersCount = viewModel.logs.count -
                     viewModel.muscleDistribution.prefix(4).map { $0.count }.reduce(0, +)
-                HStack(spacing: 8) {
+                HStack(spacing: 5) {
                     Circle()
-                        .fill(Color(hex: "#E1E1E1"))
+                        .fill(Color(hex: "#F3F4F6"))
                         .frame(width: 12, height: 12)
                     Text("Otros (\(Int(round(Double(othersCount)/Double(viewModel.logs.count)*100)))%)")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.black)
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing) // <--- aquí se alinea TODO el bloque a la derecha
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
-
 
     // Sesiones recientes
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Sesiones recientes")
-                .font(.headline)
+                .font(.title2)
+                .fontWeight(.heavy)
                 .foregroundColor(.textTitle)
             ForEach(viewModel.recentLogs) { log in
                 SessionRow(log: log)
