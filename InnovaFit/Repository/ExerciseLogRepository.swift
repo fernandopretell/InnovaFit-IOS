@@ -3,7 +3,9 @@ import FirebaseAuth
 import FirebaseFirestore
 
 class ExerciseLogRepository {
-    static private let collection = Firestore.firestore().collection("exercise_logs")
+    // Colección de Firestore que almacena los registros de ejercicios
+    // Se usa el nombre `exercise_log` tal como se define en la base de datos
+    static private let collection = Firestore.firestore().collection("exercise_log")
 
     /// Registra un ejercicio para el usuario actual si no existe uno en la fecha actual.
     /// - Parameters:
@@ -63,6 +65,30 @@ class ExerciseLogRepository {
                     if let error { completion(.failure(error)) }
                     else { completion(.success(true)) }
                 }
+            }
+    }
+
+    /// Obtiene todos los registros de ejercicio para el usuario autenticado.
+    /// - Parameter completion: Callback con la lista de logs ordenados por fecha descendente.
+    static func fetchLogsForCurrentUser(
+        completion: @escaping (Result<[ExerciseLog], Error>) -> Void
+    ) {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            completion(.success([]))
+            return
+        }
+
+        collection
+            .whereField("userId", isEqualTo: userId)
+            .order(by: "timestamp", descending: true)
+            .getDocuments { snapshot, error in
+                if let error { completion(.failure(error)); return }
+
+                let logs = snapshot?.documents.compactMap {
+                    try? $0.data(as: ExerciseLog.self)
+                } ?? []
+
+                completion(.success(logs))
             }
     }
 }
