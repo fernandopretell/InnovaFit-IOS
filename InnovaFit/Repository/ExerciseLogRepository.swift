@@ -65,5 +65,27 @@ class ExerciseLogRepository {
                 }
             }
     }
+    
+    static func fetchLogsForCurrentUser(
+            completion: @escaping (Result<[ExerciseLog], Error>) -> Void
+    ) {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            completion(.success([]))
+            return
+        }
+        
+        collection
+            .whereField("userId", isEqualTo: userId)
+            .order(by: "timestamp", descending: true)
+            .getDocuments { snapshot, error in
+                if let error { completion(.failure(error)); return }
+                
+                let logs = snapshot?.documents.compactMap {
+                    try? $0.data(as: ExerciseLog.self)
+                } ?? []
+                
+                completion(.success(logs))
+            }
+    }
 }
 
