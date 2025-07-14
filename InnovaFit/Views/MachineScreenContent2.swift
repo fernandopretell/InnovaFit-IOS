@@ -111,6 +111,17 @@ struct MachineScreenContent2: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .zIndex(10)
             }
+            
+            // Toast de registro de ejercicio
+            if showExerciseToast {
+                VStack {
+                    Spacer()
+                    ToastView2(message: "¡Ejercicio registrado en tu historial!")
+                        .padding(.bottom, 60)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .zIndex(99)
+            }
         }
         .preferredColorScheme(.light)
         .fullScreenCover(item: $selectedVideo) { video in
@@ -217,17 +228,7 @@ struct MachineScreenContent2: View {
                     .frame(maxWidth: .infinity)
                     .frame(maxHeight: .infinity, alignment: .bottom)
                     .background(Color.white.ignoresSafeArea())
-                    .cornerRadius(16, corners: [.topLeft, .topRight])
-                    
-                    if showExerciseToast {
-                        VStack {
-                            Spacer()
-                            ToastView2(message: "¡Ejercicio registrado en tu historial!")
-                                .padding(.bottom, 60)
-                        }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .zIndex(99)
-                    }
+                    .cornerRadius(16, corners: [.topLeft, .topRight])                    
                 }
             }
         }
