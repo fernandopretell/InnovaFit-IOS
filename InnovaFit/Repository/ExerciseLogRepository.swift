@@ -55,6 +55,7 @@ class ExerciseLogRepository {
                     "videoTitle": video.title,
                     "machineId": machineId,
                     "machineName": machine.name,
+                    "machineImageUrl": machine.imageUrl,
                     "muscleGroups": Array(video.musclesWorked.keys),
                     "timestamp": FieldValue.serverTimestamp()
                 ]
@@ -74,8 +75,18 @@ class ExerciseLogRepository {
             return
         }
         
+        var calendar = Calendar.current
+        // Establecer lunes como primer día de la semana
+        calendar.firstWeekday = 2
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+        guard let startOfWeek = calendar.date(from: components) else {
+            completion(.success([]))
+            return
+        }
+
         collection
             .whereField("userId", isEqualTo: userId)
+            .whereField("timestamp", isGreaterThanOrEqualTo: Timestamp(date: startOfWeek))
             .order(by: "timestamp", descending: true)
             .getDocuments { snapshot, error in
                 if let error { completion(.failure(error)); return }

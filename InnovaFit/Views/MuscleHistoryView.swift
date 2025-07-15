@@ -146,13 +146,16 @@ struct SessionRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "dumbbell")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 40, height: 40)
-                .padding(6)
-                .background(Color.backgroundFields)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            AsyncImage(url: URL(string: log.machineImageUrl)) { phase in
+                if let image = phase.image {
+                    image.resizable().scaledToFill()
+                } else {
+                    Color.backgroundFields
+                }
+            }
+            .frame(width: 40, height: 40)
+            .clipped()
+            .cornerRadius(8)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(log.machineName)

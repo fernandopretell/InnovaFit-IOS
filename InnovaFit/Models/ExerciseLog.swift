@@ -14,6 +14,7 @@ struct ExerciseLog: Identifiable, Codable {
     @DocumentID var id: String?
     let machineId: String
     let machineName: String
+    let machineImageUrl: String
     let muscleGroups: [String]
     let timestamp: Date
     let userId: String
