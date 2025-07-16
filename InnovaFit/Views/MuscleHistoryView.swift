@@ -132,7 +132,10 @@ struct MuscleHistoryView: View {
                 .fontWeight(.heavy)
                 .foregroundColor(.textTitle)
             ForEach(viewModel.recentLogs) { log in
-                SessionRow(log: log)
+                SessionRow(
+                    log: log,
+                    muscleColor: viewModel.color(for: log.muscleGroups.first ?? "")
+                )
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -142,6 +145,7 @@ struct MuscleHistoryView: View {
 // MARK: - Row de sesión
 struct SessionRow: View {
     let log: ExerciseLog
+    let muscleColor: Color
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
@@ -167,7 +171,7 @@ struct SessionRow: View {
                 if let mainMuscle = log.muscleGroups.first {
                     Text("\(mainMuscle)")
                         .font(.subheadline.weight(.bold))
-                        .foregroundColor(Color(hex: "#F9C534")) // Naranja
+                        .foregroundColor(muscleColor)
                         .padding(.top, 2)
                 }
             }
