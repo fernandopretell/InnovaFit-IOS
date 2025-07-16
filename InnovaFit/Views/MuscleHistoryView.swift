@@ -7,26 +7,35 @@ struct MuscleHistoryView: View {
     @State private var isPresentingCamera = false
     @State private var shareImage: UIImage?
     @State private var showShareSheet = false
+    @State private var isProcessingSelfie = false
 
     var body: some View {
         GeometryReader { geo in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    header
-                        .padding(.top, geo.safeAreaInsets.top)
-                    pieChartSection
-                    recentSection
+            ZStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        header
+                            .padding(.top, geo.safeAreaInsets.top)
+                        pieChartSection
+                        recentSection
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 16)
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 16)
+                .background(Color(hex: "#F8F9FA").ignoresSafeArea())
+                .onAppear { viewModel.fetchLogs() }
+
+                if isProcessingSelfie {
+                    Color.black.opacity(0.4).ignoresSafeArea()
+                    ProgressView("Generando...")
+                        .padding(16)
+                        .background(Color.white)
+                        .cornerRadius(12)
+                }
             }
-            .background(Color(hex: "#F8F9FA").ignoresSafeArea())
-            .onAppear { viewModel.fetchLogs() }
             .sheet(isPresented: $isPresentingCamera) {
                 SelfieCameraView { image in
-                    let composed = createShareImage(selfie: image)
-                    self.shareImage = composed
-                    self.showShareSheet = true
+                    processSelfie(image)
                 }
             }
             .sheet(isPresented: $showShareSheet) {
@@ -234,28 +243,66 @@ struct SessionRow: View {
 
 // MARK: - Selfie Share helpers
 extension MuscleHistoryView {
+    private func processSelfie(_ image: UIImage) {
+        isProcessingSelfie = true
+        Task {
+            let bgRemoved = await image.removingBackground() ?? image
+            let composed = createShareImage(selfie: bgRemoved)
+            await MainActor.run {
+                self.shareImage = composed
+                self.isProcessingSelfie = false
+                self.showShareSheet = true
+            }
+        }
+    }
+
     private func createShareImage(selfie: UIImage) -> UIImage {
-        // Placeholder composition. Background removal would be implemented here.
-        let renderer = UIGraphicsImageRenderer(size: selfie.size)
-        let statsText = "Sesiones: \(viewModel.logs.count)"
-        return renderer.image { ctx in
-            selfie.draw(in: CGRect(origin: .zero, size: selfie.size))
+        let targetSize = CGSize(width: 1080, height: 1920)
+        let cardView = ShareCardView(selfie: selfie, logs: viewModel.logs)
+        return cardView.asImage(size: targetSize)
+    }
+}
 
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.boldSystemFont(ofSize: selfie.size.width * 0.07),
-                .foregroundColor: UIColor.white,
-                .paragraphStyle: {
-                    let style = NSMutableParagraphStyle()
-                    style.alignment = .center
-                    return style
-                }()
-            ]
+private struct ShareCardView: View {
+    let selfie: UIImage
+    let logs: [ExerciseLog]
 
-            let textRect = CGRect(x: 0,
-                                   y: selfie.size.height - selfie.size.width * 0.2,
-                                   width: selfie.size.width,
-                                   height: selfie.size.width * 0.2)
-            statsText.draw(in: textRect, withAttributes: attributes)
+    var body: some View {
+        ZStack {
+            Image("AppLogo1")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+
+            Image(uiImage: selfie)
+                .resizable()
+                .scaledToFit()
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .shadow(radius: 10)
+                .padding()
+
+            VStack {
+                Spacer()
+                Text("Sesiones esta semana: \(logs.count)")
+                    .font(.title2.weight(.bold))
+                    .foregroundColor(.white)
+                    .padding(12)
+                    .background(Color.black.opacity(0.7))
+                    .cornerRadius(12)
+                    .padding(.bottom, 40)
+            }
+        }
+    }
+}
+
+private extension View {
+    func asImage(size: CGSize) -> UIImage {
+        let controller = UIHostingController(rootView: self)
+        controller.view.bounds = CGRect(origin: .zero, size: size)
+        controller.view.backgroundColor = .clear
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
         }
     }
 }
