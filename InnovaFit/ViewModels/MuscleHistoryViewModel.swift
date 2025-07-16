@@ -84,5 +84,9 @@ extension MuscleHistoryViewModel {
             DonutSegment(percent: Double(share.count) / Double(total), color: share.color)
         }
     }
-    
+
+    func color(for muscle: String) -> Color {
+        muscleDistribution.first(where: { $0.muscle == muscle })?.color ?? Color(hex: "#E1E3E8")
+    }
+
 }
