@@ -7,6 +7,7 @@ struct MuscleHistoryView: View {
     @State private var isPresentingCamera = false
     @State private var shareImage: UIImage?
     @State private var showShareSheet = false
+    @State private var showSelfiePreview = false
     @State private var isProcessingSelfie = false
 
     var body: some View {
@@ -36,6 +37,13 @@ struct MuscleHistoryView: View {
             .sheet(isPresented: $isPresentingCamera) {
                 SelfieCameraView { image in
                     processSelfie(image)
+                }
+            }
+            .sheet(isPresented: $showSelfiePreview) {
+                if let shareImage = shareImage {
+                    SharePreview(image: shareImage) {
+                        showShareSheet = true
+                    }
                 }
             }
             .sheet(isPresented: $showShareSheet) {
@@ -251,7 +259,7 @@ extension MuscleHistoryView {
             await MainActor.run {
                 self.shareImage = composed
                 self.isProcessingSelfie = false
-                self.showShareSheet = true
+                self.showSelfiePreview = true
             }
         }
     }
@@ -291,6 +299,27 @@ private struct ShareCardView: View {
                     .cornerRadius(12)
                     .padding(.bottom, 40)
             }
+        }
+    }
+}
+
+private struct SharePreview: View {
+    let image: UIImage
+    var onShare: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .ignoresSafeArea()
+
+            Button("Compartir") {
+                dismiss()
+                onShare()
+            }
+            .padding()
         }
     }
 }
