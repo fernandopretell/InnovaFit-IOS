@@ -18,7 +18,7 @@ class MuscleHistoryViewModel: ObservableObject {
         }
     }
 
-    // TOP 3 + Otros
+    // TOP 4 + Otros
     var muscleDistribution: [MuscleShare] {
         var counts: [String: Int] = [:]
         for log in logs {
@@ -30,28 +30,30 @@ class MuscleHistoryViewModel: ObservableObject {
         let sorted = counts.sorted { $0.value > $1.value }
         var result: [MuscleShare] = []
 
-        // Top 3
-        for (idx, entry) in sorted.prefix(3).enumerated() {
+        // Top 4
+        for (idx, entry) in sorted.prefix(4).enumerated() {
             let color: Color
             switch idx {
             case 0: color = Color(hex: "#F9C534") // Amarillo
             case 1: color = Color(hex: "#569BF5") // Azul
             case 2: color = Color(hex: "#45D97B") // Verde
-            default: color = Color(hex: "#E1E3E8") //gris claro
+            case 3: color = Color(hex: "#F66768") // Rojo (puedes cambiar el HEX si prefieres otro tono)
+            default: color = Color(hex: "#E1E3E8") // Gris claro
             }
             result.append(MuscleShare(muscle: entry.key, count: entry.value, color: color))
         }
 
-        // Otros (si hay más de 3 grupos musculares)
-        if sorted.count > 3 {
-            let othersCount = sorted.dropFirst(3).map { $0.value }.reduce(0, +)
+        // Otros (si hay más de 4 grupos musculares)
+        if sorted.count > 4 {
+            let othersCount = sorted.dropFirst(4).map { $0.value }.reduce(0, +)
             if othersCount > 0 {
-                result.append(MuscleShare(muscle: "Otros", count: othersCount, color: Color(hex: "#E1E1E1")))
+                result.append(MuscleShare(muscle: "Otros", count: othersCount, color: Color(hex: "#E1E3E8")))
             }
         }
 
         return result
     }
+
 
     var recentLogs: [ExerciseLog] {
         let sorted = logs.sorted { $0.timestamp > $1.timestamp }

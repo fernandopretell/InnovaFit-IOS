@@ -68,35 +68,59 @@ class ExerciseLogRepository {
     }
     
     static func fetchLogsForCurrentUser(
-            completion: @escaping (Result<[ExerciseLog], Error>) -> Void
+        completion: @escaping (Result<[ExerciseLog], Error>) -> Void
     ) {
         guard let userId = Auth.auth().currentUser?.uid else {
+            print("No hay usuario logueado")
             completion(.success([]))
             return
         }
         
         var calendar = Calendar.current
-        // Establecer lunes como primer día de la semana
-        calendar.firstWeekday = 2
+        calendar.timeZone = TimeZone.current
+        calendar.firstWeekday = 2 // Lunes como primer día de la semana
         let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
         guard let startOfWeek = calendar.date(from: components) else {
+            print("No se pudo calcular el startOfWeek")
             completion(.success([]))
             return
         }
 
+        print("UserID: \(userId)")
+        print("startOfWeek: \(startOfWeek) (\(startOfWeek.formatted(date: .abbreviated, time: .omitted)))")
+        
         collection
             .whereField("userId", isEqualTo: userId)
             .whereField("timestamp", isGreaterThanOrEqualTo: Timestamp(date: startOfWeek))
             .order(by: "timestamp", descending: true)
             .getDocuments { snapshot, error in
-                if let error { completion(.failure(error)); return }
+                if let error {
+                    print("Error en getDocuments: \(error.localizedDescription)")
+                    completion(.failure(error))
+                    return
+                }
                 
-                let logs = snapshot?.documents.compactMap {
-                    try? $0.data(as: ExerciseLog.self)
-                } ?? []
-                
-                completion(.success(logs))
+                let logs = snapshot?.documents.compactMap { doc in
+                    do {
+                        return try doc.data(as: ExerciseLog.self)
+                    } catch {
+                        print("Error decodificando doc ID: \(doc.documentID): \(error)")
+                        return nil
+                    }
+                }
+
+                print("Total documentos recibidos: \(snapshot?.documents.count ?? 0)")
+                for doc in snapshot?.documents ?? [] {
+                    if let ts = doc.get("timestamp") as? Timestamp {
+                        let date = ts.dateValue()
+                        print("Doc ID: \(doc.documentID) | Timestamp: \(date) (\(date.formatted(date: .abbreviated, time: .omitted)))")
+                    }
+                }
+                print("Total logs decodificados: \(logs?.count ?? 0)")
+
+                completion(.success(logs!))
             }
     }
+
 }
 

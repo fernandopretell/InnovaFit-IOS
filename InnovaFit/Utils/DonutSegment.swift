@@ -23,7 +23,7 @@ struct DonutChartView: View {
             // Centro blanco
             Circle()
                 .fill(Color.white)
-                .frame(width: 80, height: 80)
+                .frame(width: 100, height: 100)
 
             // Texto central
             VStack(spacing: 2) {

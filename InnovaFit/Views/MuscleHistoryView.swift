@@ -97,7 +97,7 @@ struct MuscleHistoryView: View {
 
     // Leyenda a la derecha (alineada pro)
     private func muscleLegend(for viewModel: MuscleHistoryViewModel) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 12) {
             ForEach(viewModel.muscleDistribution.prefix(4)) { item in
                 HStack(spacing: 5) {
                     Circle()
@@ -140,56 +140,62 @@ struct MuscleHistoryView: View {
 }
 
 // MARK: - Row de sesión
-
 struct SessionRow: View {
     let log: ExerciseLog
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                // Fecha relativa
+                Text(log.timestamp.formatted(.relative(presentation: .named, unitsStyle: .abbreviated)))
+                    .font(.caption2)
+                    .foregroundColor(Color(.systemGray))
+                
+                // Título
+                Text(log.machineName)
+                    .font(.headline)
+                    .fontWeight(.heavy)
+                    .foregroundColor(.textTitle)
+                
+                // Ejercicio
+                Text(log.videoTitle)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.textBody)
+                
+                // Músculo principal
+                if let mainMuscle = log.muscleGroups.first {
+                    Text("\(mainMuscle)")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundColor(Color(hex: "#F9C534")) // Naranja
+                        .padding(.top, 2)
+                }
+            }
+            
+            Spacer(minLength: 8)
+            
+            // Imagen de la máquina
             AsyncImage(url: URL(string: log.machineImageUrl)) { phase in
                 if let image = phase.image {
-                    image.resizable().scaledToFill()
+                    image
+                        .resizable()
+                        .scaledToFill()
                 } else {
-                    Color.backgroundFields
+                    Color(.systemGray5)
                 }
             }
-            .frame(width: 40, height: 40)
-            .clipped()
+            .frame(width: 70, height: 70)
             .cornerRadius(8)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(log.machineName)
-                    .font(.subheadline.bold())
-                    .foregroundColor(.textTitle)
-                Text(log.muscleGroups.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundColor(.textBody)
-                Text(log.timestamp, style: .time)
-                    .font(.caption2)
-                    .foregroundColor(.textSubtitle)
-            }
-            Spacer()
-            VStack(spacing: 12) {
-                Button {
-                    // Acción para volver a la rutina
-                } label: {
-                    Image(systemName: "arrow.uturn.backward")
-                }
-                ShareLink(item: "Entrené \(log.videoTitle)") {
-                    Image(systemName: "square.and.arrow.up")
-                }
-            }
-            .buttonStyle(BorderlessButtonStyle())
-            .foregroundColor(.accentColor)
+            .clipped()
         }
         .padding()
         .background(Color.white)
-        .cornerRadius(12)
+        .cornerRadius(14)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.black.opacity(0.05), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
     }
 }
 
