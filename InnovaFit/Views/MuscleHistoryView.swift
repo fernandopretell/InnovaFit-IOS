@@ -1,8 +1,12 @@
 import SwiftUI
 import Charts
+import UIKit
 
 struct MuscleHistoryView: View {
     @StateObject private var viewModel = MuscleHistoryViewModel()
+    @State private var isPresentingCamera = false
+    @State private var shareImage: UIImage?
+    @State private var showShareSheet = false
 
     var body: some View {
         GeometryReader { geo in
@@ -18,6 +22,18 @@ struct MuscleHistoryView: View {
             }
             .background(Color(hex: "#F8F9FA").ignoresSafeArea())
             .onAppear { viewModel.fetchLogs() }
+            .sheet(isPresented: $isPresentingCamera) {
+                SelfieCameraView { image in
+                    let composed = createShareImage(selfie: image)
+                    self.shareImage = composed
+                    self.showShareSheet = true
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let shareImage = shareImage {
+                    ShareSheet(items: [shareImage])
+                }
+            }
         }
     }
 
@@ -127,10 +143,23 @@ struct MuscleHistoryView: View {
     // Sesiones recientes
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Sesiones recientes")
-                .font(.title2)
-                .fontWeight(.heavy)
-                .foregroundColor(.textTitle)
+            HStack {
+                Text("Sesiones recientes")
+                    .font(.title2)
+                    .fontWeight(.heavy)
+                    .foregroundColor(.textTitle)
+
+                Spacer()
+
+                Button {
+                    isPresentingCamera = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title2.weight(.bold))
+                        .foregroundColor(.textTitle)
+                }
+            }
+
             ForEach(viewModel.recentLogs) { log in
                 SessionRow(
                     log: log,
@@ -200,6 +229,34 @@ struct SessionRow: View {
                 .stroke(Color.black.opacity(0.05), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
+    }
+}
+
+// MARK: - Selfie Share helpers
+extension MuscleHistoryView {
+    private func createShareImage(selfie: UIImage) -> UIImage {
+        // Placeholder composition. Background removal would be implemented here.
+        let renderer = UIGraphicsImageRenderer(size: selfie.size)
+        let statsText = "Sesiones: \(viewModel.logs.count)"
+        return renderer.image { ctx in
+            selfie.draw(in: CGRect(origin: .zero, size: selfie.size))
+
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.boldSystemFont(ofSize: selfie.size.width * 0.07),
+                .foregroundColor: UIColor.white,
+                .paragraphStyle: {
+                    let style = NSMutableParagraphStyle()
+                    style.alignment = .center
+                    return style
+                }()
+            ]
+
+            let textRect = CGRect(x: 0,
+                                   y: selfie.size.height - selfie.size.width * 0.2,
+                                   width: selfie.size.width,
+                                   height: selfie.size.width * 0.2)
+            statsText.draw(in: textRect, withAttributes: attributes)
+        }
     }
 }
 
