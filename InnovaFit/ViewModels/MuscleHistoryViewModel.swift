@@ -26,8 +26,14 @@ class MuscleHistoryViewModel: ObservableObject {
                 counts[mainMuscle, default: 0] += 1
             }
         }
-        // Ordenar de mayor a menor
-        let sorted = counts.sorted { $0.value > $1.value }
+        // Ordenar de mayor a menor y de forma estable cuando hay empates
+        let sorted = counts.sorted { lhs, rhs in
+            if lhs.value == rhs.value {
+                return lhs.key < rhs.key
+            } else {
+                return lhs.value > rhs.value
+            }
+        }
         var result: [MuscleShare] = []
 
         // Top 4
