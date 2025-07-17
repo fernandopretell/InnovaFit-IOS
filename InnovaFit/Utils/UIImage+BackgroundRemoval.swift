@@ -2,54 +2,81 @@ import UIKit
 import Vision
 import CoreImage
 
-extension UIImage {
-    func removingBackground() async -> UIImage? {
-        print("[BG_REMOVAL] Inicio de removingBackground()")
-        guard let cgImage = self.cgImage else {
-            print("[BG_REMOVAL] ❌ No CGImage disponible")
-            return nil
-        }
-        let request = VNGeneratePersonSegmentationRequest()
-        request.qualityLevel = .balanced
-        request.outputPixelFormat = kCVPixelFormatType_OneComponent8
-
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        do {
-            print("[BG_REMOVAL] Ejecutando request de segmentación…")
-            try handler.perform([request])
-
-            guard
-                let results = request.results,
-                let maskBuffer = results.first?.pixelBuffer
-            else {
-                print("[BG_REMOVAL] ❌ No se obtuvo pixelBuffer del mask")
-                return nil
-            }
-            print("[BG_REMOVAL] ✅ Mask buffer obtenido: tamaño \(CVPixelBufferGetWidth(maskBuffer))x\(CVPixelBufferGetHeight(maskBuffer))")
-
-            // Convertir a CIImage
-            let maskImage = CIImage(cvPixelBuffer: maskBuffer)
-            let original = CIImage(cgImage: cgImage)
-
-            // Aplicar máscara
-            let blended = original.applyingFilter(
-                "CIBlendWithMask",
-                parameters: [kCIInputMaskImageKey: maskImage]
-            )
-            print("[BG_REMOVAL] Composición con máscara aplicada")
-
-            // Crear CGImage de salida
-            let context = CIContext()
-            guard let cgResult = context.createCGImage(blended, from: original.extent) else {
-                print("[BG_REMOVAL] ❌ No se pudo crear CGImage de resultado")
-                return nil
-            }
-            print("[BG_REMOVAL] ✅ CGImage de resultado creado, devolviendo UIImage final")
-            return UIImage(cgImage: cgResult, scale: self.scale, orientation: self.imageOrientation)
-        } catch {
-            print("[BG_REMOVAL] ❌ Error durante la petición Vision: \(error.localizedDescription)")
-            return nil
-        }
+private extension CIImage {
+    /// Escala la máscara para que tenga la misma altura que otra imagen, manteniendo proporción.
+    func resizeToSameHeight(as other: CIImage) -> CIImage {
+        let sizeSelf = extent.size
+        let sizeOther = other.extent.size
+        let scaleX = sizeOther.width  / sizeSelf.width
+        let scaleY = sizeOther.height / sizeSelf.height
+        return transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
     }
 }
+
+extension UIImage {
+    func removingBackground() async -> UIImage? {
+        guard let cgImage = self.cgImage else { return nil }
+
+        // 1. Configurar la petición
+        let request = VNGeneratePersonSegmentationRequest()
+        request.qualityLevel = .accurate
+        request.outputPixelFormat = kCVPixelFormatType_OneComponent8
+        // NO usamos imageCropAndScaleOption
+
+        // 2. Ejecutar Vision
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        do {
+            try handler.perform([request])
+        } catch {
+            print("[BG_REMOVAL] Error Vision: \(error)")
+            return nil
+        }
+ 
+        // 3. Obtener maskBuffer
+        guard
+            let obs = request.results?.first as? VNPixelBufferObservation
+        else {
+            print("[BG_REMOVAL] No hay VNPixelBufferObservation")
+            return nil
+        }
+        let maskBuffer = obs.pixelBuffer
+
+        // 4. Transformar a CIImage y escalar+centrar
+        let originalCI = CIImage(cgImage: cgImage)
+        let maskSmallCI = CIImage(cvPixelBuffer: maskBuffer)
+
+        // Escala la máscara a la misma altura que la original
+        let maskResizedCI = maskSmallCI.resizeToSameHeight(as: originalCI)
+
+        // Centra horizontalmente
+        let dx = -(maskResizedCI.extent.width - originalCI.extent.width) / 2
+        let maskCenteredCI = maskResizedCI.transformed(by: CGAffineTransform(translationX: dx, y: 0))
+
+        // 5. Crear fondo transparente
+        let transparentBG = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: 0))
+            .cropped(to: originalCI.extent)
+
+        // 6. Mezclar con la máscara
+        guard
+            let blend = CIFilter(name: "CIBlendWithMask", parameters: [
+                kCIInputImageKey:          originalCI,
+                kCIInputBackgroundImageKey: transparentBG,
+                kCIInputMaskImageKey:      maskCenteredCI
+            ])?.outputImage
+        else {
+            print("[BG_REMOVAL] Falló CIBlendWithMask")
+            return nil
+        }
+
+        // 7. Renderizar y devolver UIImage
+        let context = CIContext()
+        guard let cgResult = context.createCGImage(blend, from: originalCI.extent) else {
+            print("[BG_REMOVAL] No pudo crear CGImage final")
+            return nil
+        }
+        return UIImage(cgImage: cgResult, scale: scale, orientation: imageOrientation)
+    }
+}
+
+
 
