@@ -15,8 +15,7 @@ struct MuscleHistoryView: View {
             ZStack {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        header
-                            .padding(.top, geo.safeAreaInsets.top)
+                        header(geo: geo)
                         pieChartSection
                         recentSection
                     }
@@ -54,19 +53,31 @@ struct MuscleHistoryView: View {
         }
     }
 
-    // Header bajo el notch
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Historial semanal")
-                .font(.title)
-                .fontWeight(.heavy)
-                .foregroundColor(.textTitle)
-            Text("Revisa qué grupos musculares has trabajado esta semana.")
-                .font(.subheadline)
-                .foregroundColor(.textSubtitle)
+    // Header bajo el notch, con botón compartir a la derecha
+    private func header(geo: GeometryProxy) -> some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Historial semanal")
+                    .font(.title)
+                    .fontWeight(.heavy)
+                    .foregroundColor(.textTitle)
+                Text("Revisa qué grupos musculares has trabajado esta semana.")
+                    .font(.subheadline)
+                    .foregroundColor(.textSubtitle)
+            }
+            Spacer()
+            Button {
+                isPresentingCamera = true
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.title2.weight(.bold))
+                    .foregroundColor(.textTitle)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal)
+        .padding(.top, geo.safeAreaInsets.top + 8)
     }
+
 
     // Pie chart con leyenda a la derecha y donut centrado verticalmente
     private var pieChartSection: some View {
@@ -167,14 +178,6 @@ struct MuscleHistoryView: View {
                     .foregroundColor(.textTitle)
 
                 Spacer()
-
-                Button {
-                    isPresentingCamera = true
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.title2.weight(.bold))
-                        .foregroundColor(.textTitle)
-                }
             }
 
             ForEach(viewModel.recentLogs) { log in
@@ -226,25 +229,50 @@ struct SessionRow: View {
             
             // Imagen de la máquina
             AsyncImage(url: URL(string: log.machineImageUrl)) { phase in
-                if let image = phase.image {
+                switch phase {
+                case .empty:
+                    // Placeholder mientras carga
+                    ZStack {
+                        Color(hex:"#CACCD3")                // fondo gris claro
+                        ProgressView()                     // spinner centrado
+                            .progressViewStyle(
+                                CircularProgressViewStyle(tint: .gray) // spinner en gris oscuro
+                            )
+                            .scaleEffect(1.2)              // un poco más grande
+                    }
+                case .success(let image):
                     image
                         .resizable()
                         .scaledToFill()
-                } else {
-                    Color(.systemGray5)
+                case .failure:
+                    // Icono de mancuerna si falla
+                    ZStack {
+                        Color(.systemGray2)
+                        Image(systemName: "dumbbell.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 30, height: 30)
+                            .foregroundColor(.gray.opacity(0.7))
+                    }
+                @unknown default:
+                    ZStack {
+                        Color(.systemGray2)
+                        ProgressView()
+                            .progressViewStyle(
+                                CircularProgressViewStyle(tint: .gray)
+                            )
+                            .scaleEffect(1.2)
+                    }
                 }
             }
             .frame(width: 70, height: 70)
             .cornerRadius(8)
             .clipped()
+
         }
         .padding()
         .background(Color.white)
         .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.black.opacity(0.05), lineWidth: 1)
-        )
         .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
     }
 }
@@ -266,40 +294,128 @@ extension MuscleHistoryView {
 
     private func createShareImage(selfie: UIImage) -> UIImage {
         let targetSize = CGSize(width: 1080, height: 1920)
-        let cardView = ShareCardView(selfie: selfie, logs: viewModel.logs)
+        let cardView = ShareCardView(selfie: selfie, logs: viewModel.logs, gymName: "Mike Gym")
         return cardView.asImage(size: targetSize)
     }
 }
 
-private struct ShareCardView: View {
+struct ShareCardView: View {
     let selfie: UIImage
     let logs: [ExerciseLog]
+    let gymName: String
+
+    // Top 3 músculos más trabajados
+    private var topMuscles: [String] {
+        var counts: [String: Int] = [:]
+        for log in logs {
+            if let m = log.muscleGroups.first {
+                counts[m, default: 0] += 1
+            }
+        }
+        return counts
+            .sorted { $0.value > $1.value }
+            .prefix(3)
+            .map { $0.key }
+    }
 
     var body: some View {
         ZStack {
-            Image("AppLogo1")
-                .resizable()
-                .scaledToFill()
+            // Fondo amarillo de marca
+            Color(hex: "#FDD835")
                 .ignoresSafeArea()
 
-            Image(uiImage: selfie)
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .shadow(radius: 10)
-                .padding()
+            // Elementos decorativos (puedes reemplazar por shapes/brushes más elaborados)
+            GeometryReader { geo in
+                Circle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 100, height: 100)
+                    .offset(x: geo.size.width * 0.7, y: -20)
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 2)
+                    .frame(width: 60, height: 60)
+                    .rotationEffect(.degrees(45))
+                    .offset(x: -30, y: geo.size.height * 0.2)
+            }
 
-            VStack {
-                Spacer()
-                Text("Sesiones esta semana: \(logs.count)")
-                    .font(.title2.weight(.bold))
+            VStack(spacing: 16) {
+                // Título superior
+                HStack {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("PROGRESO")
+                            .font(.title2).bold()
+                        Text("SEMANAL")
+                            .font(.title2).bold()
+                    }
                     .foregroundColor(.white)
-                    .padding(12)
-                    .background(Color.black.opacity(0.7))
-                    .cornerRadius(12)
-                    .padding(.bottom, 40)
+                    Spacer()
+                    Image(systemName: "dumbbell.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                }
+                .padding(.horizontal)
+                .padding(.top, 20)
+
+                Spacer()
+
+                // Selfie en círculo con borde
+                Image(uiImage: selfie)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 180, height: 180)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white, lineWidth: 4))
+                    .shadow(radius: 8)
+
+                Spacer()
+
+                // Pie de tarjeta: músculos + sesiones + logo
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(topMuscles, id: \.self) { muscle in
+                            Text(muscle)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                        }
+                        Text(gymName.uppercased())
+                            .font(.caption).bold()
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+
+                    Spacer()
+
+                    // Círculo de sesiones
+                    ZStack {
+                        Circle()
+                            .fill(Color.black.opacity(0.3))
+                            .frame(width: 80, height: 80)
+                        VStack(spacing: 2) {
+                            Text("\(logs.count)")
+                                .font(.title).bold()
+                                .foregroundColor(.white)
+                            Text("SESIONES")
+                                .font(.caption2).bold()
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 12)
+
+                // Logo Innovafit en el pie
+                HStack {
+                    Spacer()
+                    Image("AppIcon")   // Asegúrate de tener este asset
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 24)
+                        .padding(.trailing)
+                }
             }
         }
+        .frame(width: 300, height: 460)
+        .cornerRadius(24)
+        .shadow(radius: 6)
     }
 }
 

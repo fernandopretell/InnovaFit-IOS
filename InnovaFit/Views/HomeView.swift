@@ -60,7 +60,7 @@ struct HomeView: View {
                 }
             }
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Color(hex: "#F8F9FA").ignoresSafeArea())
     }
 }
 
@@ -87,15 +87,48 @@ struct MachineCardView: View {
                 Spacer()
 
                 AsyncImage(url: URL(string: machine.imageUrl)) { phase in
-                    if let image = phase.image {
-                        image.resizable().scaledToFill()
-                    } else {
-                        Color.gray.opacity(0.2)
+                    switch phase {
+                    case .empty:
+                        // Mientras carga, mostramos spinner sobre fondo gris claro
+                        ZStack {
+                            Color(hex:"#CACCD3")
+                            ProgressView()
+                                .progressViewStyle(
+                                    CircularProgressViewStyle(tint: .gray)
+                                )
+                                .scaleEffect(1.2)
+                        }
+                    case .success(let image):
+                        // Imagen descargada
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .failure:
+                        // Si falla, fondo gris con icono de mancuerna
+                        ZStack {
+                            Color(.systemGray5)
+                            Image(systemName: "dumbbell.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 32, height: 32)
+                                .foregroundColor(.gray.opacity(0.7))
+                        }
+                    @unknown default:
+                        // Para futuros casos
+                        ZStack {
+                            Color(.systemGray5)
+                            ProgressView()
+                                .progressViewStyle(
+                                    CircularProgressViewStyle(tint: .gray)
+                                )
+                                .scaleEffect(1.2)
+                        }
                     }
                 }
                 .frame(width: 80, height: 80)
                 .clipped()
                 .cornerRadius(10)
+
             }
 
             HStack {
@@ -112,10 +145,6 @@ struct MachineCardView: View {
         .padding()
         .background(Color.white)
         .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
-        )
         .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
     }
 }
