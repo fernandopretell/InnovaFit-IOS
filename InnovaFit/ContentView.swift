@@ -6,6 +6,8 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             switch authViewModel.authState {
+            case .splash:
+                SplashView()
             case .login:
                 LoginView(viewModel: authViewModel)
             case .otp:

@@ -3,6 +3,7 @@ import FirebaseAuth
 
 /// Estados posibles de autenticación
 enum AuthState {
+    case splash
     case login
     case otp
     case register
@@ -15,7 +16,7 @@ class AuthViewModel: ObservableObject {
     @Published var otpCode: String = ""
     @Published var verificationID: String?
     @Published var userProfile: UserProfile?
-    @Published var authState: AuthState = .login
+    @Published var authState: AuthState = .splash
     @Published var gyms: [Gym] = []
 
     private let repository = UserRepository()
@@ -37,6 +38,8 @@ class AuthViewModel: ObservableObject {
                     }
                 }
             }
+        } else {
+            authState = .login
         }
     }
 
