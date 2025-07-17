@@ -28,7 +28,7 @@ struct MachineScreenContent2: View {
 
     var body: some View {
         ZStack {
-            Color.white.ignoresSafeArea()
+            //Color(hex: "F5F5F5").ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 16) {
@@ -67,12 +67,11 @@ struct MachineScreenContent2: View {
                     .padding(.horizontal)
 
                     // Descripción
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(machine.description)
-                            .font(.body)
-                            .foregroundColor(.black)
-                    }
-                    .padding(.horizontal)
+                    VStack(spacing: 30) {
+                        JustifiedText(text: machine.description)
+                            }
+                            .padding()
+
 
                     // Lista de videos sugeridos
                     VStack(alignment: .leading, spacing: 12) {
@@ -245,6 +244,8 @@ struct MachineScreenContent2: View {
                 }
             }
         }
+        .background(Color(hex: "#F5F5F5").ignoresSafeArea())
+
     }
 
     private func dismissFeedback() {
@@ -375,10 +376,6 @@ struct VideoRowView: View {
         .padding()
         .background(Color.white)
         .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
-        )
         .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
         .padding(.horizontal, 16)
         .onTapGesture {
@@ -449,7 +446,6 @@ private extension MachineScreenContent2 {
     }
 }
 
-
 struct MachineScreenContent_Previews2: PreviewProvider {
     static var previews: some View {
         let machine = Machine(
@@ -483,6 +479,23 @@ struct MachineScreenContent_Previews2: PreviewProvider {
         )
 
         MachineScreenContent2(machine: machine, gym: gym)
+    }
+}
+
+struct JustifiedText: UIViewRepresentable {
+    var text: String
+    
+    func makeUIView(context: Context) -> UITextView {
+        let textView = UITextView()
+        textView.text = text
+        textView.textAlignment = .justified
+        textView.font = .systemFont(ofSize: 18)
+        
+        return textView
+    }
+    
+    func updateUIView(_ uiView: UITextView, context: Context) {
+        
     }
 }
 

@@ -60,10 +60,9 @@ struct HomeView: View {
                 }
             }
         }
-        .background(Color(hex: "#F8F9FA").ignoresSafeArea())
+        .background(Color(hex: "#F5F5F5").ignoresSafeArea())
     }
 }
-
 
 struct MachineCardView: View {
     let machine: Machine

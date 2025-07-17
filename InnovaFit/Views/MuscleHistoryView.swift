@@ -22,7 +22,7 @@ struct MuscleHistoryView: View {
                     .padding(.horizontal)
                     .padding(.bottom, 16)
                 }
-                .background(Color(hex: "#F8F9FA").ignoresSafeArea())
+                .background(Color(hex: "#F5F5F5").ignoresSafeArea())
                 .onAppear { viewModel.fetchLogs() }
 
                 if isProcessingSelfie {
@@ -384,7 +384,7 @@ struct ShareCardView: View {
 
                     Spacer()
 
-                    // Círculo de sesiones
+                    // Círculo de sesiones253
                     ZStack {
                         Circle()
                             .fill(Color.black.opacity(0.3))
