@@ -484,18 +484,18 @@ struct MachineScreenContent_Previews2: PreviewProvider {
 
 struct JustifiedText: UIViewRepresentable {
     var text: String
-    
-    func makeUIView(context: Context) -> UITextView {
-        let textView = UITextView()
-        textView.text = text
-        textView.textAlignment = .justified
-        textView.font = .systemFont(ofSize: 18)
-        
-        return textView
+
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.textAlignment = .justified
+        label.font = .systemFont(ofSize: 18)
+        label.text = text
+        return label
     }
-    
-    func updateUIView(_ uiView: UITextView, context: Context) {
-        
+
+    func updateUIView(_ uiView: UILabel, context: Context) {
+        uiView.text = text
     }
 }
 
