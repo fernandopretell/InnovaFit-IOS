@@ -27,8 +27,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
            let activity = activities.values.first as? NSUserActivity,
            activity.activityType == NSUserActivityTypeBrowsingWeb,
            let url = activity.webpageURL,
-           let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-           let tag = components.queryItems?.first(where: { $0.name == "tag" })?.value {
+           let tag = extractTag(from: url) {
             pendingTag = tag
             didLaunchViaUniversalLink = true
         } else {
@@ -43,8 +42,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         
         if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
            let url = userActivity.webpageURL,
-           let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-           let tag = components.queryItems?.first(where: { $0.name == "tag" })?.value {
+           let tag = extractTag(from: url) {
 
             print("📲 AppDelegate recibió tag por Universal Link: \(tag)")
             self.pendingTag = tag
@@ -86,6 +84,17 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         }
 
         UIApplication.shared.registerForRemoteNotifications()
+    }
+
+    private func extractTag(from url: URL) -> String? {
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: true) {
+            if let item = components.queryItems?.first(where: { $0.name.lowercased() == "tag" }) {
+                return item.value
+            }
+            let lastPath = components.path.split(separator: "/").last
+            return lastPath.map { String($0) }
+        }
+        return nil
     }
 
 }
