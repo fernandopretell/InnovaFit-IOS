@@ -68,9 +68,9 @@ struct MachineScreenContent2: View {
 
                     // Descripción
                     VStack(spacing: 30) {
-                        JustifiedText(text: machine.description)
+                        Text(machine.description)
                             }
-                            .padding()
+                    .padding(.horizontal)
 
 
                     // Lista de videos sugeridos
