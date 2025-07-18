@@ -9,7 +9,7 @@ struct SplashView: View {
 
             VStack(spacing: 24) {
                 // Aquí el icono de la app (debes tener un asset llamado "AppLaunchIcon")
-                Image("AppIcon")
+                Image("AppLogo1")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 120, height: 120)
