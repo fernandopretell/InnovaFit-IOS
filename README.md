@@ -13,5 +13,16 @@ Proyecto iOS para el sistema InnovaFit. Esta app utiliza Swift + SwiftUI y está
 
 ```bash
 ./run_tests.sh
+```
 
+## 🌐 Universal Links
 
+La app soporta abrir máquinas directamente desde un Universal Link que incluya
+el parámetro `tag`. Un enlace válido se ve así:
+
+```
+https://link.innovafit.pe/?tag=tag_001
+```
+
+Al abrirlo, la app carga la máquina y el gimnasio asociados y navega
+automáticamente a `MachineScreenContent2`.
