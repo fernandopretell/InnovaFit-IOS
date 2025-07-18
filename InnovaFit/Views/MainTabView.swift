@@ -3,6 +3,7 @@ import UIKit
 
 struct MainTabView: View {
     @ObservedObject var viewModel: AuthViewModel
+    @EnvironmentObject private var appDelegate: AppDelegate
     @StateObject private var machineVM = MachineViewModel()
     @State private var selectedTab: Tab = .home
     @State private var navigationPath: [TabsRoute] = []
@@ -76,6 +77,18 @@ struct MainTabView: View {
                             }
                         }
                     }
+                }
+            }
+            .onAppear {
+                if let tag = appDelegate.pendingTag {
+                    machineVM.loadDataFromTag(tag)
+                    appDelegate.pendingTag = nil
+                }
+            }
+            .onChange(of: appDelegate.pendingTag) { _, newValue in
+                if let tag = newValue {
+                    machineVM.loadDataFromTag(tag)
+                    appDelegate.pendingTag = nil
                 }
             }
             .onChange(of: machineVM.hasLoadedTag) { _, newValue in
