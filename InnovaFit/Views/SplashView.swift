@@ -4,7 +4,7 @@ import SwiftUI
 struct SplashView: View {
     var body: some View {
         ZStack {
-            Color.white
+            Color.black
                 .ignoresSafeArea()
 
             VStack(spacing: 24) {
@@ -12,7 +12,7 @@ struct SplashView: View {
                 Image("AppLogo1")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 120, height: 120)
+                    .frame(width: 150)
 
                 // El spinner
                 ProgressView()
