@@ -294,28 +294,47 @@ extension MuscleHistoryView {
 
     private func createShareImage(selfie: UIImage) -> UIImage {
         let targetSize = CGSize(width: 1080, height: 1920)
-        let cardView = ShareCardView(selfie: selfie, logs: viewModel.logs, gymName: "Mike Gym")
+        let cardView = ShareCardView(name: "selfie", logs: viewModel.logs, gymName: "Mike Gym", featuredExercise: "Cuadriceps" )
         return cardView.asImage(size: targetSize)
     }
 }
 
+struct MuscleShareShareCard: Identifiable {
+    let id = UUID()
+    let muscle: String
+    let percentage: Double
+    let color: Color
+}
+
 struct ShareCardView: View {
-    let selfie: UIImage
+    let name: String
     let logs: [ExerciseLog]
     let gymName: String
+    let featuredExercise: String
 
-    // Top 3 músculos más trabajados
-    private var topMuscles: [String] {
+    // Cálculo de la distribución (porcentaje) de los músculos
+    private var muscleDistribution: [MuscleShareShareCard] {
+        // Cuenta sesiones por músculo principal
         var counts: [String: Int] = [:]
         for log in logs {
             if let m = log.muscleGroups.first {
                 counts[m, default: 0] += 1
             }
         }
+        let total = counts.values.reduce(0, +)
+        // Asignamos colores a los primeros 3 músculos
+        let palette: [Color] = [.orange, .blue, .green]
         return counts
             .sorted { $0.value > $1.value }
+            .enumerated()
             .prefix(3)
-            .map { $0.key }
+            .map { idx, entry in
+                MuscleShareShareCard(
+                    muscle: entry.key,
+                    percentage: total > 0 ? Double(entry.value) / Double(total) * 100 : 0,
+                    color: palette[idx]
+                )
+            }
     }
 
     var body: some View {
@@ -324,98 +343,107 @@ struct ShareCardView: View {
             Color(hex: "#FDD835")
                 .ignoresSafeArea()
 
-            // Elementos decorativos (puedes reemplazar por shapes/brushes más elaborados)
-            GeometryReader { geo in
-                Circle()
-                    .fill(Color.white.opacity(0.1))
-                    .frame(width: 100, height: 100)
-                    .offset(x: geo.size.width * 0.7, y: -20)
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 2)
-                    .frame(width: 60, height: 60)
-                    .rotationEffect(.degrees(45))
-                    .offset(x: -30, y: geo.size.height * 0.2)
-            }
-
             VStack(spacing: 16) {
-                // Título superior
-                HStack {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("PROGRESO")
-                            .font(.title2).bold()
-                        Text("SEMANAL")
-                            .font(.title2).bold()
-                    }
-                    .foregroundColor(.white)
-                    Spacer()
-                    Image(systemName: "dumbbell.fill")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                }
-                .padding(.horizontal)
-                .padding(.top, 20)
-
-                Spacer()
-
-                // Selfie en círculo con borde
-                Image(uiImage: selfie)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 180, height: 180)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.white, lineWidth: 4))
-                    .shadow(radius: 8)
-
-                Spacer()
-
-                // Pie de tarjeta: músculos + sesiones + logo
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        ForEach(topMuscles, id: \.self) { muscle in
-                            Text(muscle)
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                        }
-                        Text(gymName.uppercased())
-                            .font(.caption).bold()
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-
-                    Spacer()
-
-                    // Círculo de sesiones253
-                    ZStack {
-                        Circle()
-                            .fill(Color.black.opacity(0.3))
-                            .frame(width: 80, height: 80)
-                        VStack(spacing: 2) {
-                            Text("\(logs.count)")
-                                .font(.title).bold()
-                                .foregroundColor(.white)
-                            Text("SESIONES")
-                                .font(.caption2).bold()
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 12)
-
-                // Logo Innovafit en el pie
-                HStack {
-                    Spacer()
-                    Image("AppIcon")   // Asegúrate de tener este asset
+                // Logo + nombre de gimnasio
+                VStack(spacing: 4) {
+                    Image("innovafitLogo")      // asset con el logo
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 24)
-                        .padding(.trailing)
+                        .frame(height: 32)
+                    Text(gymName)
+                        .font(.subheadline).bold()
+                        .foregroundColor(.black.opacity(0.7))
                 }
+
+                // Título principal
+                Text("Evolución Semanal")
+                    .font(.largeTitle).bold()
+                    .foregroundColor(.black)
+
+                // Mensaje personalizado
+                Text("\(name), esta semana rompiste tu récord 💪")
+                    .font(.headline)
+                    .foregroundColor(.black.opacity(0.8))
+
+                // Donut chart con número de sesiones
+                Chart(muscleDistribution) { item in
+                    SectorMark(
+                        angle: .value("Porcentaje", item.percentage),
+                        innerRadius: .ratio(0.6),
+                        angularInset: 1
+                    )
+                    .foregroundStyle(item.color)
+                }
+                .chartBackground { proxy in
+                    // Número total en el centro
+                    VStack {
+                        Text("\(logs.count)")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundColor(.black)
+                        Text("Ejercicios")
+                            .font(.footnote).bold()
+                            .foregroundColor(.black.opacity(0.7))
+                    }
+                    .frame(width: proxy.plotAreaSize.width,
+                           height: proxy.plotAreaSize.height,
+                           alignment: .center)
+                }
+                .frame(height: 200)
+
+                // Leyenda debajo del donut
+                HStack(spacing: 16) {
+                    ForEach(muscleDistribution) { item in
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(item.color)
+                                .frame(width: 10, height: 10)
+                            Text("\(item.muscle) \(Int(item.percentage))%")
+                                .font(.caption)
+                                .foregroundColor(.black)
+                        }
+                    }
+                }
+
+                // Ejercicio destacado
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ejercicio destacado")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                        Text(featuredExercise)
+                            .font(.headline).bold()
+                            .foregroundColor(.white)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.title3)
+                        .foregroundColor(.white.opacity(0.9))
+                }
+                .padding()
+                .background(Color.black)
+                .cornerRadius(12)
+                .padding(.horizontal)
+
+                // Botón de llamada a la acción
+                Button(action: {
+                    // acción de “Entrena con Innovafit”
+                }) {
+                    Text("Entrena con Innovafit")
+                        .font(.headline).bold()
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .foregroundColor(.black)
+                        .cornerRadius(24)
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 16)
             }
+            .padding(.top, 16)
         }
-        .frame(width: 300, height: 460)
-        .cornerRadius(24)
-        .shadow(radius: 6)
+        .frame(width: 330, height: 700)
+        .cornerRadius(32)
+        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
     }
 }
 
