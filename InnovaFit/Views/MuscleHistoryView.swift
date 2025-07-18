@@ -34,9 +34,7 @@ struct MuscleHistoryView: View {
                 }
             }
             .sheet(isPresented: $isPresentingCamera) {
-                SelfieCameraView { image in
-                    processSelfie(image)
-                }
+                ShareCardView(name: "selfie", logs: viewModel.logs, gymName: "Mike Gym", featuredExercise: "Cuadriceps" )
             }
             .sheet(isPresented: $showSelfiePreview) {
                 if let shareImage = shareImage {
