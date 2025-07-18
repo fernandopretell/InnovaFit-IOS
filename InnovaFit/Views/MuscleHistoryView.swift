@@ -384,8 +384,8 @@ struct ShareCardView: View {
                             .font(.footnote).bold()
                             .foregroundColor(.black.opacity(0.7))
                     }
-                    .frame(width: proxy.plotAreaSize.width,
-                           height: proxy.plotAreaSize.height,
+                    .frame(width: proxy.plotSize.width,
+                           height: proxy.plotSize.height,
                            alignment: .center)
                 }
                 .frame(height: 200)
