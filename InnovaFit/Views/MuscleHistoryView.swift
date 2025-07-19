@@ -4,6 +4,7 @@ import UIKit
 
 struct MuscleHistoryView: View {
     @StateObject private var viewModel = MuscleHistoryViewModel()
+    @EnvironmentObject var authViewModel: AuthViewModel
     @State private var isPresentingCamera = false
     @State private var shareImage: UIImage?
     @State private var showShareSheet = false
@@ -34,7 +35,11 @@ struct MuscleHistoryView: View {
                 }
             }
             .sheet(isPresented: $isPresentingCamera) {
-                ShareCardView(name: "selfie", logs: viewModel.logs, gymName: "Mike Gym", featuredExercise: "Cuadriceps" )
+                ShareCardView(
+                    name: authViewModel.userProfile?.name ?? "",
+                    logs: viewModel.logs,
+                    gymName: authViewModel.userProfile?.gym?.name ?? "",
+                    featuredExercise: viewModel.muscleDistribution.first?.muscle ?? "Cuadriceps" )
             }
             .sheet(isPresented: $showSelfiePreview) {
                 if let shareImage = shareImage {

@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct MainTabView: View {
     @ObservedObject var viewModel: AuthViewModel
@@ -17,20 +16,9 @@ struct MainTabView: View {
         NavigationStack(path: $navigationPath) {
             GeometryReader { proxy in
                 ZStack(alignment: .bottom) {
-                    Group {
-                        switch selectedTab {
-                        case .home:
-                            HomeView(
-                                viewModel: viewModel,
-                                onSelectMachine: { machine, gym in
-                                    navigationPath.append(.machine(machine: machine, gym: gym))
-                                }
-                            )
-                        case .history:
-                            MuscleHistoryView()
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // Contenido según pestaña seleccionada
+                    contentForSelectedTab()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     // Custom Tab Bar
                     HStack(alignment: .bottom) {
@@ -71,7 +59,6 @@ struct MainTabView: View {
                 case .qrScanner:
                     SwipeBackNavigation {
                         QRScannerView { scannedCode in
-                            print("📦 Código escaneado: \(scannedCode)")
                             if let tag = extractTag(from: scannedCode) {
                                 machineVM.loadDataFromTag(tag)
                             }
@@ -105,8 +92,28 @@ struct MainTabView: View {
                 Button("Aceptar", role: .cancel) {}
             }
         }
+        .environmentObject(viewModel)
     }
-    
+
+    // MARK: - Constructor de vistas por pestaña
+
+    @ViewBuilder
+    private func contentForSelectedTab() -> some View {
+        switch selectedTab {
+        case .home:
+            HomeView(
+                viewModel: viewModel,
+                onSelectMachine: { machine, gym in
+                    navigationPath.append(.machine(machine: machine, gym: gym))
+                }
+            )
+        case .history:
+            MuscleHistoryView()
+        }
+    }
+
+    // MARK: - Botón central de escáner
+
     private func ScannerTabButton(proxy: GeometryProxy) -> some View {
         VStack(spacing: 4) {
             Button {
@@ -120,7 +127,6 @@ struct MainTabView: View {
 
                     Image(systemName: "qrcode.viewfinder")
                         .resizable()
-                        .renderingMode(.template)
                         .scaledToFit()
                         .frame(width: 28, height: 28)
                         .foregroundColor(.black)
@@ -130,27 +136,25 @@ struct MainTabView: View {
 
             Text("Escanear")
                 .font(.footnote)
-                .foregroundColor(Color.black)
+                .foregroundColor(.black)
         }
     }
-    
+
     private func scannerYOffset(proxy: GeometryProxy) -> CGFloat {
         let isiPhoneWithIsland = proxy.safeAreaInsets.bottom > 20
         return isiPhoneWithIsland ? 4 : -8
     }
 
+    // MARK: - Extracción de tag de URL
+
     private func extractTag(from urlString: String) -> String? {
-        if let components = URLComponents(string: urlString) {
-            if let item = components.queryItems?.first(where: { $0.name.lowercased() == "tag" }) {
-                return item.value
-            }
-            let lastPath = components.path.split(separator: "/").last
-            return lastPath.map { String($0) }
+        guard let components = URLComponents(string: urlString) else { return nil }
+        if let item = components.queryItems?.first(where: { $0.name.lowercased() == "tag" }) {
+            return item.value
         }
-        return nil
+        return components.path.split(separator: "/").last.map(String.init)
     }
 }
-
 
 struct TabBarItem: View {
     let label: String
