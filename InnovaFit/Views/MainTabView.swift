@@ -67,24 +67,35 @@ struct MainTabView: View {
                 }
             }
             .onAppear {
-                if let tag = appDelegate.pendingTag {
+                if appDelegate.didLaunchViaUniversalLink,
+                   let tag = appDelegate.pendingTag {
+                    // Ensure we start from the Home tab
+                    selectedTab = .home
                     machineVM.loadDataFromTag(tag)
                     appDelegate.pendingTag = nil
                 }
             }
             .onChange(of: appDelegate.pendingTag) { _, newValue in
-                if let tag = newValue {
+                if appDelegate.didLaunchViaUniversalLink,
+                   let tag = newValue {
+                    // Ensure we start from the Home tab
+                    selectedTab = .home
                     machineVM.loadDataFromTag(tag)
                     appDelegate.pendingTag = nil
                 }
             }
             .onChange(of: machineVM.hasLoadedTag) { _, newValue in
                 if newValue {
+                    // Always display the machine from the Home tab
+                    selectedTab = .home
+
                     if let machine = machineVM.machine, let gym = machineVM.gym {
                         navigationPath.append(.machine(machine: machine, gym: gym))
                     } else {
                         showErrorAlert = true
                     }
+
+                    appDelegate.didLaunchViaUniversalLink = false
                     machineVM.hasLoadedTag = false
                 }
             }
