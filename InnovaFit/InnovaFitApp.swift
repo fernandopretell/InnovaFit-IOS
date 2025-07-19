@@ -11,7 +11,7 @@ import FirebaseAuth
 class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
 
     @Published var pendingTag: String?
-    var didLaunchViaUniversalLink: Bool = false
+    @Published var didLaunchViaUniversalLink: Bool = false
     
     func application(
         _ application: UIApplication,
