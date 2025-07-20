@@ -18,6 +18,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         print("🚀 AppDelegate: aplicación lanzó")
+        print("🔗 Launch options: \(launchOptions ?? [:])")
         FirebaseApp.configure()
         
         // 🔐 Solicita permiso de notificaciones push
@@ -28,6 +29,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
            activity.activityType == NSUserActivityTypeBrowsingWeb,
            let url = activity.webpageURL,
            let tag = extractTag(from: url) {
+            print("📡 Universal link detectado al lanzar: \(url.absoluteString)")
             pendingTag = tag
             didLaunchViaUniversalLink = true
         } else {
@@ -39,11 +41,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
     func application(_ application: UIApplication,
                      continue userActivity: NSUserActivity,
                      restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+
+        print("➡️ Continue userActivity called with: \(userActivity.activityType) - URL: \(userActivity.webpageURL?.absoluteString ?? "nil")")
         
         if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
            let url = userActivity.webpageURL,
            let tag = extractTag(from: url) {
-
             print("📲 AppDelegate recibió tag por Universal Link: \(tag)")
             self.pendingTag = tag
             didLaunchViaUniversalLink = true
@@ -89,10 +92,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
     private func extractTag(from url: URL) -> String? {
         if let components = URLComponents(url: url, resolvingAgainstBaseURL: true) {
             if let item = components.queryItems?.first(where: { $0.name.lowercased() == "tag" }) {
-                return item.value
+                let tagValue = item.value
+                print("🔎 extractTag query item result: \(tagValue ?? "nil")")
+                return tagValue
             }
             let lastPath = components.path.split(separator: "/").last
-            return lastPath.map { String($0) }
+            let pathTag = lastPath.map { String($0) }
+            print("🔎 extractTag path result: \(pathTag ?? "nil")")
+            return pathTag
         }
         return nil
     }
