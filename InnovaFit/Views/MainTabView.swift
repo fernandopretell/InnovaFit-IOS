@@ -67,29 +67,35 @@ struct MainTabView: View {
                 }
             }
             .onAppear {
+                print("🟢 MainTabView onAppear - didLaunchViaUniversalLink: \(appDelegate.didLaunchViaUniversalLink), tag: \(appDelegate.pendingTag ?? "nil")")
                 if appDelegate.didLaunchViaUniversalLink,
                    let tag = appDelegate.pendingTag {
                     // Ensure we start from the Home tab
                     selectedTab = .home
+                    print("🚀 Cargando datos para tag en onAppear: \(tag)")
                     machineVM.loadDataFromTag(tag)
                     appDelegate.pendingTag = nil
                 }
             }
             .onChange(of: appDelegate.pendingTag) { _, newValue in
+                print("🔄 pendingTag cambió a: \(newValue ?? "nil")")
                 if appDelegate.didLaunchViaUniversalLink,
                    let tag = newValue {
                     // Ensure we start from the Home tab
                     selectedTab = .home
+                    print("🚀 Cargando datos para tag desde onChange: \(tag)")
                     machineVM.loadDataFromTag(tag)
                     appDelegate.pendingTag = nil
                 }
             }
             .onChange(of: machineVM.hasLoadedTag) { _, newValue in
+                print("📦 hasLoadedTag cambió a: \(newValue)")
                 if newValue {
                     // Always display the machine from the Home tab
                     selectedTab = .home
 
                     if let machine = machineVM.machine, let gym = machineVM.gym {
+                        print("✅ Navegando a MachineScreenContent2")
                         navigationPath.append(.machine(machine: machine, gym: gym))
                     } else {
                         showErrorAlert = true

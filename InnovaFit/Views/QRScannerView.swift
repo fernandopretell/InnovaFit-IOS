@@ -29,6 +29,7 @@ struct QRScannerView: UIViewControllerRepresentable {
         func didFind(code: String) {
             guard !hasScanned else { return }
             hasScanned = true
+            print("📸 Código QR detectado: \(code)")
             DispatchQueue.main.async {
                 self.parent.onFound(code)
             }

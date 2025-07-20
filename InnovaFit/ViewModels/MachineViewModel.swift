@@ -14,6 +14,7 @@ class MachineViewModel: ObservableObject {
     
 
     func loadDataFromTag(_ tag: String) {
+        print("🚚 loadDataFromTag called with tag: \(tag)")
         self.tag = tag
         self.isLoading = true
         self.errorMessage = nil
@@ -21,6 +22,8 @@ class MachineViewModel: ObservableObject {
 
         MachineRepository.resolveTag(tag: tag) { [weak self] gymId, machineId in
             guard let self = self else { return }
+
+            print("🧭 resolveTag result gymId: \(gymId ?? "nil"), machineId: \(machineId ?? "nil")")
 
             guard let gymId = gymId, let machineId = machineId else {
                 DispatchQueue.main.async {
@@ -49,6 +52,7 @@ class MachineViewModel: ObservableObject {
             }
 
             group.notify(queue: .main) {
+                print("🏋️‍♂️ Loaded gym: \(loadedGym?.name ?? "nil"), machine: \(loadedMachine?.name ?? "nil")")
                 self.gym = loadedGym
                 self.machine = loadedMachine
                 self.isLoading = false

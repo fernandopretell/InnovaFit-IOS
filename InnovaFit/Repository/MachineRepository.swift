@@ -29,6 +29,7 @@ class MachineRepository {
     /// Carga un `Machine` desde Firestore dado su `machineId`.
     static func loadMachine(machineId: String, completion: @escaping (Machine?) -> Void) {
         let db = Firestore.firestore()
+        print("📥 Loading Machine with id: \(machineId)")
         db.collection("machines").document(machineId).getDocument { snapshot, error in
             guard let doc = snapshot, error == nil else {
                 print("❌ Error al cargar Machine: \(error?.localizedDescription ?? "desconocido")")
@@ -39,6 +40,7 @@ class MachineRepository {
             do {
                 // Aquí Firestore usa el modelo Machine para decodificar JSON automáticamente
                 let machine = try doc.data(as: Machine.self)
+                print("✅ Machine loaded: \(machine.name)")
                 completion(machine)
             } catch {
                 print("❌ Error al parsear Machine: \(error)")
@@ -50,6 +52,7 @@ class MachineRepository {
     /// Carga un `Gym` desde Firestore dado su `gymId`.
     static func loadGym(gymId: String, completion: @escaping (Gym?) -> Void) {
         let db = Firestore.firestore()
+        print("📥 Loading Gym with id: \(gymId)")
         db.collection("gyms").document(gymId).getDocument { snapshot, error in
             guard let doc = snapshot, error == nil else {
                 print("❌ Error al cargar Gym: \(error?.localizedDescription ?? "desconocido")")
@@ -59,6 +62,7 @@ class MachineRepository {
 
             do {
                 let gym = try doc.data(as: Gym.self)
+                print("✅ Gym loaded: \(gym.name)")
                 completion(gym)
             } catch {
                 print("❌ Error al parsear Gym: \(error)")
