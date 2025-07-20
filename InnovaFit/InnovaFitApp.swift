@@ -89,7 +89,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         UIApplication.shared.registerForRemoteNotifications()
     }
 
-    private func extractTag(from url: URL) -> String? {
+    func extractTag(from url: URL) -> String? {
         if let components = URLComponents(url: url, resolvingAgainstBaseURL: true) {
             if let item = components.queryItems?.first(where: { $0.name.lowercased() == "tag" }) {
                 let tagValue = item.value
@@ -128,14 +128,29 @@ struct InnovaFitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .onAppear {
-                    print("🌀 ContentView aparece por primera vez")
-                }
-                .environmentObject(appDelegate) // ✅ inject AppDelegate como EnvironmentObject
+          ContentView()
+            .environmentObject(appDelegate)
+            // Captura Universal Links
+            .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
+              guard let url = userActivity.webpageURL else { return }
+              print("🌐 [SwiftUI] onContinueUserActivity: \(url.absoluteString)")
+              if let tag = appDelegate.extractTag(from: url) {
+                print("🔎 Tag extraído: \(tag)")
+                appDelegate.pendingTag = tag
+                appDelegate.didLaunchViaUniversalLink = true
+              }
+            }
+            // Captura cualquier link (incluye UL y schemes)
+            .onOpenURL { url in
+              print("🔗 [SwiftUI] onOpenURL: \(url.absoluteString)")
+              if let tag = appDelegate.extractTag(from: url) {
+                appDelegate.pendingTag = tag
+                appDelegate.didLaunchViaUniversalLink = true
+              }
+            }
         }
         .modelContainer(sharedModelContainer)
-    }
+      }
 }
 
 
