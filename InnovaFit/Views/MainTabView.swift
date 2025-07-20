@@ -165,11 +165,18 @@ struct MainTabView: View {
     // MARK: - Extracción de tag de URL
 
     private func extractTag(from urlString: String) -> String? {
-        guard let components = URLComponents(string: urlString) else { return nil }
-        if let item = components.queryItems?.first(where: { $0.name.lowercased() == "tag" }) {
-            return item.value
+        guard let components = URLComponents(string: urlString) else {
+            print("🔎 extractTag no pudo crear URLComponents")
+            return nil
         }
-        return components.path.split(separator: "/").last.map(String.init)
+        if let item = components.queryItems?.first(where: { $0.name.lowercased() == "tag" }) {
+            let val = item.value
+            print("🔎 extractTag query: \(val ?? "nil")")
+            return val
+        }
+        let pathTag = components.path.split(separator: "/").last.map(String.init)
+        print("🔎 extractTag path: \(pathTag ?? "nil")")
+        return pathTag
     }
 }
 

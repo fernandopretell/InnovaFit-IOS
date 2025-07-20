@@ -33,6 +33,7 @@ class MachineRepository {
         db.collection("machines").document(machineId).getDocument { snapshot, error in
             guard let doc = snapshot, error == nil else {
                 print("❌ Error al cargar Machine: \(error?.localizedDescription ?? "desconocido")")
+                print("⚠️ snapshot de Machine es nil")
                 completion(nil)
                 return
             }
@@ -56,6 +57,7 @@ class MachineRepository {
         db.collection("gyms").document(gymId).getDocument { snapshot, error in
             guard let doc = snapshot, error == nil else {
                 print("❌ Error al cargar Gym: \(error?.localizedDescription ?? "desconocido")")
+                print("⚠️ snapshot de Gym es nil")
                 completion(nil)
                 return
             }
