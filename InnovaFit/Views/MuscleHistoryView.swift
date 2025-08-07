@@ -159,7 +159,7 @@ struct MuscleHistoryView: View {
             ForEach(viewModel.recentLogs) { log in
                 SessionRow(
                     log: log,
-                    muscleColor: viewModel.color(for: log.muscleGroups.first ?? "")
+                    muscleColor: viewModel.color(for: log.mainMuscle)
                 )
             }
         }
@@ -193,8 +193,8 @@ struct SessionRow: View {
                     .foregroundColor(.textBody)
                 
                 // Músculo principal
-                if let mainMuscle = log.muscleGroups.first {
-                    Text("\(mainMuscle)")
+                if !log.mainMuscle.isEmpty {
+                    Text(log.mainMuscle)
                         .font(.subheadline.weight(.bold))
                         .foregroundColor(muscleColor)
                         .padding(.top, 2)
