@@ -118,30 +118,18 @@ struct MuscleHistoryView: View {
     // Leyenda a la derecha (alineada pro)
     private func muscleLegend(for viewModel: MuscleHistoryViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(viewModel.muscleDistribution.prefix(4)) { item in
+            ForEach(viewModel.muscleDistribution) { item in
                 HStack(spacing: 5) {
                     Circle()
                         .fill(item.color)
                         .frame(width: 12, height: 12)
                     Text("\(item.muscle) (\(item.percentString(total: viewModel.logs.count)))")
                         .font(.caption)
-                        .foregroundColor(item.color == Color(hex: "#F3F4F6") ? .black : .black)
-                }
-            }
-            if viewModel.muscleDistribution.count > 4 {
-                let othersCount = viewModel.logs.count -
-                    viewModel.muscleDistribution.prefix(4).map { $0.count }.reduce(0, +)
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(Color(hex: "#F3F4F6"))
-                        .frame(width: 12, height: 12)
-                    Text("Otros (\(Int(round(Double(othersCount)/Double(viewModel.logs.count)*100)))%)")
-                        .font(.caption)
                         .foregroundColor(.black)
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // Sesiones recientes
