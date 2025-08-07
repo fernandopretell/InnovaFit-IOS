@@ -127,19 +127,33 @@ struct ShareCardView: View {
 
     }
 
-    // Versión de la tarjeta sin recorte para compartirla como imagen
+    // Versión de la vista para compartir sin los botones superiores
     private var shareCard: some View {
         ZStack {
-            Color.accentColor
-            content
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 12) {
+                topBarPlaceholder
+                cardContent
+            }
+            .foregroundStyle(.white)
         }
-        .frame(width: 330, alignment: .center)
-        .cornerRadius(24)
-        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
-        .overlay(alignment: .top) {
-            gymBadge
+    }
+
+    // Placeholder para mantener el espacio de la cabecera sin mostrar los botones
+    private var topBarPlaceholder: some View {
+        HStack {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 18, weight: .bold))
+                .opacity(0)
+
+            Spacer()
+
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 18, weight: .bold))
+                .opacity(0)
         }
-        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
     }
 
     // MARK: - Pastilla gimnasio (más grande)
