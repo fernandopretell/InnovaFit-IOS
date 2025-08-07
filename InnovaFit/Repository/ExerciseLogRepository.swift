@@ -49,6 +49,9 @@ class ExerciseLogRepository {
                     return
                 }
 
+                let primaryMuscle = video.musclesWorked
+                    .max { $0.value.weight < $1.value.weight }?.key ?? ""
+
                 let data: [String: Any] = [
                     "userId": userId,
                     "videoId": video.id,
@@ -56,7 +59,7 @@ class ExerciseLogRepository {
                     "machineId": machineId,
                     "machineName": machine.name,
                     "machineImageUrl": machine.imageUrl,
-                    "muscleGroups": Array(video.musclesWorked.keys),
+                    "muscleGroup": primaryMuscle,
                     "timestamp": FieldValue.serverTimestamp()
                 ]
 

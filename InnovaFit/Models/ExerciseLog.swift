@@ -15,7 +15,8 @@ struct ExerciseLog: Identifiable, Codable {
     let machineId: String
     let machineName: String
     let machineImageUrl: String
-    let muscleGroups: [String]
+    /// Grupo muscular principal trabajado en el ejercicio
+    let muscleGroup: String
     let timestamp: Date
     let userId: String
     let videoId: String

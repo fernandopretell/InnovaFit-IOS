@@ -27,9 +27,7 @@ struct CardForShareView: View {
         // Cuenta por músculo principal
         var counts: [String:Int] = [:]
         logs.forEach { log in
-            if let m = log.muscleGroups.first {
-                counts[m, default: 0] += 1
-            }
+            counts[log.muscleGroup, default: 0] += 1
         }
         let palette: [Color] = [ .orange, .blue, .green, .red, .purple ]
         return counts
@@ -164,7 +162,7 @@ struct CardForShareView_Previews: PreviewProvider {
                 machineId: "legpress",
                 machineName: "Leg Press \(index)",
                 machineImageUrl: "https://placekitten.com/200/200",
-                muscleGroups: ["Cuádriceps"],
+                muscleGroup: "Cuádriceps",
                 timestamp: Date().addingTimeInterval(Double(-index * 3600)),
                 userId: "user123",
                 videoId: "vid_quad_\(index)",
@@ -178,7 +176,7 @@ struct CardForShareView_Previews: PreviewProvider {
                 machineId: "adductor",
                 machineName: "Adductor Machine \(index)",
                 machineImageUrl: "https://placekitten.com/200/200",
-                muscleGroups: ["Aductores"],
+                muscleGroup: "Aductores",
                 timestamp: Date().addingTimeInterval(Double(-index * 7200)),
                 userId: "user123",
                 videoId: "vid_adduct_\(index)",
