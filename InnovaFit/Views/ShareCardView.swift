@@ -25,41 +25,48 @@ struct ShareCardView: View {
     }
 
     private var logs: Logs { viewModel.logs }
+
+    // Segmentos ordenados por mayor conteo
     private var segments: [MuscleSegment] {
         var counts: [String: Int] = [:]
-        logs.forEach { log in
-            counts[log.mainMuscle, default: 0] += 1
-        }
+        logs.forEach { counts[$0.mainMuscle, default: 0] += 1 }
 
         let palette: [Color] = [.orange, .blue, .green, .red, .purple]
-        return counts.sorted { $0.value > $1.value }
+        return counts
+            .sorted { $0.value > $1.value }
             .enumerated()
             .map { idx, entry in
-                MuscleSegment(muscle: entry.key, count: entry.value,
-                              color: palette[idx % palette.count])
+                MuscleSegment(
+                    muscle: entry.key,
+                    count: entry.value,
+                    color: palette[idx % palette.count]
+                )
             }
     }
+
     private var totalCount: Int { segments.map(\.count).reduce(0, +) }
+
+    // Destacado = grupo con mayor porcentaje (el primero de 'segments')
     private var featuredExercise: String {
-        logs.sorted { $0.timestamp > $1.timestamp }
-            .first?.mainMuscle ?? ""
+        segments.first?.muscle ?? ""
     }
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            cardContent
-                .onAppear { viewModel.fetchLogs() }
+        
+        
+        ZStack {
+            Color.black.ignoresSafeArea()
 
-            Button {
-                shareImage = cardContent.asImage(size: CGSize(width: 330, height: 600))
-                showShareSheet = true
-            } label: {
-                Image(systemName: "square.and.arrow.up.circle.fill")
-                    .font(.title)
-                    .foregroundColor(.white)
+            VStack(spacing: 12) {
+                // Top bar FUERA del card
+                topBar
+
+                // Card
+                cardContent
             }
-            .padding()
+            .foregroundStyle(.white)
         }
+        .onAppear { viewModel.fetchLogs() }
         .sheet(isPresented: $showShareSheet) {
             if let shareImage {
                 ShareSheet(items: [shareImage])
@@ -67,24 +74,74 @@ struct ShareCardView: View {
         }
     }
 
+    // MARK: - Top Bar (fuera del card)
+    private var topBar: some View {
+        HStack {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .bold))
+                    .symbolRenderingMode(.monochrome)
+            }
+
+            Spacer()
+
+            Button {
+                shareImage = cardContent.asImage(size: CGSize(width: 330, height: 600))
+                showShareSheet = true
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 18, weight: .bold))
+                    .symbolRenderingMode(.monochrome)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .foregroundStyle(.white)  // ← todos los íconos/textos en blanco
+        .tint(.white)             // ← por si algún control usa tint
+    }
+
+
+    // MARK: - Card
     private var cardContent: some View {
         ZStack {
-            Color(Color.accentColor).edgesIgnoringSafeArea(.all)
+            // Fondo del card
+            Color.accentColor
+            content
 
-            if logs.isEmpty {
+            /*if logs.isEmpty {
                 emptyState
             } else {
                 content
-            }
+            }*/
         }
-        .frame(width: 330, height: 600)
+        .frame(width: 330, alignment: .center)
         .cornerRadius(24)
         .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+        .overlay(alignment: .top) {
+            gymBadge
+                .offset(y: -26) // ~mitad fuera
+                .zIndex(1)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        // Pastilla del gimnasio: mitad saliendo por arriba
+        
+    }
+
+    // MARK: - Pastilla gimnasio (más grande)
+    private var gymBadge: some View {
+        Text(authViewModel.userProfile?.gym?.name ?? "")
+            .font(.title3.weight(.black)) // más grande
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 16)
+            .background(Color.white.cornerRadius(12))
+            .foregroundColor(.black)
     }
 
     // MARK: - Estado vacío
     private var emptyState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             Text("Aún no te has ejercitado esta semana")
                 .font(.title2).bold()
                 .multilineTextAlignment(.center)
@@ -94,48 +151,38 @@ struct ShareCardView: View {
                 .multilineTextAlignment(.center)
                 .foregroundColor(.gray)
 
-            Button(action: {
-                // Acción sugerida: navegar a la pantalla de ejercicios
-            }) {
+            Button(action: {}) {
                 Text("Empezar ahora")
                     .font(.headline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue.cornerRadius(8))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.blue.cornerRadius(10))
                     .foregroundColor(.white)
             }
-            .padding(.horizontal, 32)
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 24)
     }
 
-    // MARK: - Contenido con datos
+    // MARK: - Contenido (SIN Scroll)
     private var content: some View {
-        ScrollView {
-            VStack(spacing: 28) {
-                Text(authViewModel.userProfile?.gym?.name ?? "")
-                    .font(.subheadline).bold()
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .background(Color.white.cornerRadius(12))
-                    .foregroundColor(.black)
+        VStack(spacing: 32) {
+            // Dejamos espacio porque la pastilla del gym sale por arriba
+            Spacer().frame(height: 32)
 
-                VStack(spacing: 8){
-                    greetingText
-                    titleText
-                    subtitleText
-                }
-                .padding(.top, 8)
-
-                donutChart
-                legendView
-                featuredExerciseView
-                footer
+            VStack(spacing: 6){
+                greetingText
+                titleText
+                subtitleText
             }
-            .padding()
-            .frame(maxWidth: .infinity)
+
+            donutChart
+            legendView
+            featuredExerciseView
+            footer
+
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, 16)
     }
 
     private var greetingText: some View {
@@ -146,23 +193,23 @@ struct ShareCardView: View {
             + Text(", esta es tu")
         )
         .font(.subheadline)
-        .foregroundColor(.black.opacity(0.8))
+        .foregroundColor(.black.opacity(0.85))
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var titleText: some View {
         Text("Evolución semanal")
-            .font(.largeTitle).bold()
+            .font(.title.bold())
             .foregroundColor(.black)
             .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var subtitleText: some View {
         Text("durante esta semana rompiste tu récord personal…")
-            .font(.subheadline)
+            .font(.footnote)
             .foregroundColor(.black.opacity(0.8))
             .multilineTextAlignment(.center)
-            .padding(.horizontal)
+            .padding(.horizontal, 8)
     }
 
     private var donutChart: some View {
@@ -176,11 +223,11 @@ struct ShareCardView: View {
                 .foregroundStyle(seg.color)
             }
         }
-        .frame(height: 200)
+        .frame(height: 180) // baja un poco para que todo encaje
         .chartBackground { proxy in
             VStack(spacing: 0) {
                 Text("\(totalCount)")
-                    .font(.system(size: 48, weight: .bold))
+                    .font(.system(size: 44, weight: .bold))
                     .foregroundColor(.black)
                 Text("Ejercicios")
                     .font(.footnote).bold()
@@ -193,22 +240,24 @@ struct ShareCardView: View {
 
     private var legendView: some View {
         let columns = [GridItem(.flexible()), GridItem(.flexible())]
-        return LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+        return LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
             ForEach(segments) { seg in
                 HStack(spacing: 6) {
                     Circle()
                         .fill(seg.color)
                         .frame(width: 10, height: 10)
-                    Text("\(seg.muscle) \(Int(Double(seg.count)/Double(totalCount)*100))%")
+                    Text("\(seg.muscle) \(Int(round((Double(seg.count) / max(1, Double(totalCount))) * 100)))%")
                         .font(.caption)
                         .foregroundColor(.black)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         }
-        .frame(maxWidth: .infinity)
     }
 
+    // Pastilla que se ajusta al contenido (24 de padding), centrada
     private var featuredExerciseView: some View {
         HStack {
             VStack(spacing: 4) {
@@ -216,28 +265,29 @@ struct ShareCardView: View {
                     .font(.caption)
                     .foregroundColor(.white)
                 Text(featuredExercise)
-                    .font(.title2)
+                    .font(.title3)
                     .fontWeight(.heavy)
                     .foregroundColor(.accentColor)
                     .multilineTextAlignment(.center)
             }
-            .padding(18)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
             .background(Color.black.cornerRadius(12))
         }
         .frame(maxWidth: .infinity)
     }
 
     private var footer: some View {
-        HStack {
+        HStack(spacing: 6) {
             Text("Entrena con")
                 .font(.caption)
                 .foregroundColor(.black)
             Image("AppLogoBlack")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 85)
+                .frame(width: 85, height: 20)
         }
-        .padding(.bottom, 16)
+        .padding(.bottom, 8)
     }
 }
 
