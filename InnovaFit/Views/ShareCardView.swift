@@ -28,7 +28,7 @@ struct ShareCardView: View {
     private var segments: [MuscleSegment] {
         var counts: [String: Int] = [:]
         logs.forEach { log in
-            counts[log.muscleGroup, default: 0] += 1
+            counts[log.mainMuscle, default: 0] += 1
         }
 
         let palette: [Color] = [.orange, .blue, .green, .red, .purple]
@@ -42,7 +42,7 @@ struct ShareCardView: View {
     private var totalCount: Int { segments.map(\.count).reduce(0, +) }
     private var featuredExercise: String {
         logs.sorted { $0.timestamp > $1.timestamp }
-            .first?.muscleGroup ?? ""
+            .first?.mainMuscle ?? ""
     }
 
     var body: some View {

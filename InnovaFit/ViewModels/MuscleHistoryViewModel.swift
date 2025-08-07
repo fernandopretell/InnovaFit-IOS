@@ -22,9 +22,7 @@ class MuscleHistoryViewModel: ObservableObject {
     var muscleDistribution: [MuscleShare] {
         var counts: [String: Int] = [:]
         for log in logs {
-            if let mainMuscle = log.muscleGroups.first {
-                counts[mainMuscle, default: 0] += 1
-            }
+            counts[log.mainMuscle, default: 0] += 1
         }
         // Ordenar de mayor a menor y de forma estable cuando hay empates
         let sorted = counts.sorted { lhs, rhs in
