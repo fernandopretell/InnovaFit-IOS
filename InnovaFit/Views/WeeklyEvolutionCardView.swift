@@ -12,10 +12,22 @@ struct MuscleSegment: Identifiable {
 
 // MARK: - Vista principal de la tarjeta
 struct WeeklyEvolutionCardView: View {
-    
-    @StateObject private var viewModel = MuscleHistoryViewModel()
+
+    @StateObject private var viewModel: MuscleHistoryViewModel
     @EnvironmentObject var authViewModel: AuthViewModel
-    
+
+    init(viewModel: MuscleHistoryViewModel = MuscleHistoryViewModel()) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    private var logs: [ExerciseLog] {
+        viewModel.logs
+    }
+
+    private var featuredExercise: String {
+        logs.sorted { $0.timestamp > $1.timestamp }
+            .first?.machineName ?? ""
+    }
 
     private var segments: [MuscleSegment] {
         // Cuenta por músculo principal
@@ -145,6 +157,9 @@ struct WeeklyEvolutionCardView: View {
         .frame(width: 330, height: 700)
         .cornerRadius(32)
         .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+        .onAppear {
+            viewModel.fetchLogs()
+        }
     }
 }
 
@@ -182,10 +197,13 @@ struct WeeklyEvolutionCardView_Previews: PreviewProvider {
 
         let sampleLogs = quadLogs + adductorLogs
 
-        WeeklyEvolutionCardView(
-        )
-        .previewLayout(.sizeThatFits)
-        .padding()
+        let viewModel = MuscleHistoryViewModel()
+        viewModel.logs = sampleLogs
+
+        return WeeklyEvolutionCardView(viewModel: viewModel)
+            .environmentObject(AuthViewModel())
+            .previewLayout(.sizeThatFits)
+            .padding()
     }
 }
 
