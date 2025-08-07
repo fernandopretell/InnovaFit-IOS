@@ -69,7 +69,7 @@ struct ShareCardView: View {
         .onAppear { viewModel.fetchLogs() }
         .sheet(isPresented: $showShareSheet) {
             if let shareImage {
-                ShareSheet(items: [shareImage])
+                ShareSheet(items: [shareImage, "Mira mi progreso en InnovaFit"])
             }
         }
     }
@@ -86,8 +86,8 @@ struct ShareCardView: View {
             Spacer()
 
             Button {
-                shareImage = cardContent.asImage(size: CGSize(width: 330, height: 600))
-                showShareSheet = true
+                shareImage = shareCard.asImage()
+                showShareSheet = shareImage != nil
             } label: {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 18, weight: .bold))
@@ -124,7 +124,22 @@ struct ShareCardView: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         // Pastilla del gimnasio: mitad saliendo por arriba
-        
+
+    }
+
+    // Versión de la tarjeta sin recorte para compartirla como imagen
+    private var shareCard: some View {
+        ZStack {
+            Color.accentColor
+            content
+        }
+        .frame(width: 330, alignment: .center)
+        .cornerRadius(24)
+        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+        .overlay(alignment: .top) {
+            gymBadge
+        }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - Pastilla gimnasio (más grande)
@@ -292,13 +307,10 @@ struct ShareCardView: View {
 
 // MARK: - Snapshot helper
 private extension View {
-    func asImage(size: CGSize) -> UIImage {
-        let controller = UIHostingController(rootView: self)
-        controller.view.bounds = CGRect(origin: .zero, size: size)
-        controller.view.backgroundColor = .clear
-        let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.image { _ in
-            controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
-        }
+    /// Renders the view to a high-resolution UIImage
+    func asImage(scale: CGFloat = UIScreen.main.scale) -> UIImage {
+        let renderer = ImageRenderer(content: self)
+        renderer.scale = scale
+        return renderer.uiImage ?? UIImage()
     }
 }
