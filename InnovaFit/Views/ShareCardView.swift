@@ -167,7 +167,7 @@ struct ShareCardView: View {
     private var content: some View {
         VStack(spacing: 32) {
             // Dejamos espacio porque la pastilla del gym sale por arriba
-            Spacer().frame(height: 32)
+            Spacer().frame(height: 28)
 
             VStack(spacing: 6){
                 greetingText
@@ -179,8 +179,6 @@ struct ShareCardView: View {
             legendView
             featuredExerciseView
             footer
-
-            Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
     }
@@ -217,7 +215,7 @@ struct ShareCardView: View {
             ForEach(segments) { seg in
                 SectorMark(
                     angle: .value("Count", seg.count),
-                    innerRadius: .ratio(0.6),
+                    innerRadius: .ratio(0.7),
                     angularInset: 1
                 )
                 .foregroundStyle(seg.color)
@@ -231,6 +229,7 @@ struct ShareCardView: View {
                     .foregroundColor(.black)
                 Text("Ejercicios")
                     .font(.footnote).bold()
+                    .foregroundColor(.black)
             }
             .frame(width: proxy.plotSize.width,
                    height: proxy.plotSize.height,
@@ -287,7 +286,7 @@ struct ShareCardView: View {
                 .scaledToFit()
                 .frame(width: 85, height: 20)
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, 16)
     }
 }
 
