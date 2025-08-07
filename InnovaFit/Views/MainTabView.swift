@@ -125,7 +125,7 @@ struct MainTabView: View {
                 }
             )
         case .history:
-            MuscleHistoryView()
+            WeeklyEvolutionCardView()
         }
     }
 
