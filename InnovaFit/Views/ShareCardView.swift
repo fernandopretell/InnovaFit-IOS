@@ -267,7 +267,11 @@ struct ShareCardView: View {
     }
 
     private var legendView: some View {
-        let columns = [GridItem(.flexible()), GridItem(.flexible())]
+        let columns = [
+            GridItem(.flexible(), alignment: .leading),
+            GridItem(.flexible(), alignment: .leading)
+        ]
+
         return LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
             ForEach(segments) { seg in
                 HStack(spacing: 6) {
@@ -275,15 +279,21 @@ struct ShareCardView: View {
                         .fill(seg.color)
                         .frame(width: 10, height: 10)
                     Text("\(seg.muscle) \(Int(round((Double(seg.count) / max(1, Double(totalCount))) * 100)))%")
-                        .font(.caption)
+                        .font(.caption).bold()
                         .foregroundColor(.black)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, 8)
+                // ¡OJO! no expandir la celda
+                // .frame(maxWidth: .infinity, alignment: .leading)  ← quitar
             }
         }
+        .fixedSize(horizontal: true, vertical: false)          // grid del tamaño de su contenido
+        .frame(maxWidth: .infinity, alignment: .center)        // centrar el bloque
     }
+
+
 
     // Pastilla que se ajusta al contenido (24 de padding), centrada
     private var featuredExerciseView: some View {
