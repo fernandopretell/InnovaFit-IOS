@@ -51,7 +51,7 @@ struct MuscleHistoryView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.top, geo.safeAreaInsets.top + 8)
+        .padding(.top, geo.safeAreaInsets.top)
     }
 
 

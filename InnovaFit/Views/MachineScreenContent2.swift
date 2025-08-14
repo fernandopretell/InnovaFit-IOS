@@ -1,38 +1,36 @@
 import SwiftUI
-import _SwiftData_SwiftUI
-import SDWebImageSwiftUI
+import SwiftData
 
 struct MachineScreenContent2: View {
     let machine: Machine
     let gym: Gym
 
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedVideo: Video?
 
+    // Player
+    @State private var selectedVideo: Video?
+    @State private var pendingVideoToPlay: Video?
+
+    // Feedback flags
     @Query private var feedbackFlags: [ShowFeedback]
     @AppStorage("hasWatchedAllVideos") var hasWatchedAllVideos: Bool = false
     @Environment(\.modelContext) private var context
+
+    // UI states
     @State private var showFeedbackDialog = false
     @State private var showToast = false
-    @State private var showLogDialog = false
-    @State private var videoToLog: Video?
-    @State private var logOption: LogOption = .yes
     @State private var showExerciseToast = false
-    
-    enum LogOption: String, CaseIterable, Identifiable {
-        case yes = "Sí, haré el ejercicio."
-        case no = "No, solo estaba explorando la app"
-        
-        var id: String { rawValue }
-    }
+
+    // Dialogos
+    @State private var showInfoSheet = false         // descripción de la máquina
+    @State private var showRegisterChoice = false    // “Registrar y ver” / “Solo ver video”
 
     var body: some View {
         ZStack {
-            //Color(hex: "F5F5F5").ignoresSafeArea()
-
             ScrollView {
                 VStack(spacing: 16) {
-                    // Imagen principal con overlay y título
+
+                    // HEADER con imagen, título y botón info
                     ZStack(alignment: .bottomLeading) {
                         AsyncImage(url: URL(string: machine.imageUrl)) { image in
                             image.resizable()
@@ -46,17 +44,39 @@ struct MachineScreenContent2: View {
                                 .cornerRadius(12)
                         }
 
+                        // Gradiente inferior para lectura del título
                         LinearGradient(
                             gradient: Gradient(colors: [Color.black.opacity(0.8), .clear]),
                             startPoint: .bottom,
                             endPoint: .top
                         )
                         .cornerRadius(12)
-                        .frame(height: 120)
+                        .frame(height: 130)
 
+                        // Botón info (arriba derecha)
+                        HStack {
+                            Spacer()
+                            VStack {
+                                Spacer()
+
+                                Button {
+                                    showInfoSheet = true
+                                } label: {
+                                    Image(systemName: "info.circle.fill")
+                                        .font(.system(size: 22, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .background(Color.black.opacity(0.25))
+                                        .clipShape(Circle())
+                                }
+                            }
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 16)
+                        }
+
+                        // Títulos
                         VStack(alignment: .leading, spacing: 4) {
                             Text(machine.name)
-                                .font(.system(size: 24, weight: .bold))
+                                .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.white)
                             Text(machine.type)
                                 .font(.caption)
@@ -66,24 +86,35 @@ struct MachineScreenContent2: View {
                     }
                     .padding(.horizontal)
 
-                    // Descripción
-                    VStack(spacing: 30) {
-                        Text(machine.description)
-                            }
-                    .padding(.horizontal)
-
-
-                    // Lista de videos sugeridos
+                    // Lista de variantes / videos
                     VStack(alignment: .leading, spacing: 12) {
-                        ForEach(machine.defaultVideos, id: \.id) { video in
-                            VideoRowView(video: video) {
-                                selectedVideo = video
-                            }
+                        Text("Variantes")
+                            .font(.system(size: 28, weight: .heavy))
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+
+                        ForEach(machine.defaultVideos, id: \.id) { vid in
+                            VideoRowCard(
+                                video: vid,
+                                onPlay: {
+                                    // Mostrar diálogo antes de reproducir
+                                    pendingVideoToPlay = vid
+                                    withAnimation { showRegisterChoice = true }
+                                },
+                                onRegisterOnly: {
+                                    // Registrar sin abrir player (si quisieras)
+                                    ExerciseLogRepository.registerLogIfNeeded(video: vid, machine: machine) { _ in
+                                        showTransientExerciseToast()
+                                    }
+                                }
+                            )
                         }
                     }
                 }
                 .padding(.vertical)
             }
+            .background(Color(hex: "#F5F5F5").ignoresSafeArea())
 
             // Feedback Modal Flotante
             if showFeedbackDialog {
@@ -97,10 +128,10 @@ struct MachineScreenContent2: View {
                     onFeedbackSent: { dismissFeedback() }
                 )
                 .transition(.scale.combined(with: .opacity))
-                .zIndex(1)
+                .zIndex(3)
             }
 
-            // Toast
+            // Toast general (feedback enviado)
             if showToast {
                 VStack {
                     ToastView2(message: "¡Gracias por tus comentarios!")
@@ -108,9 +139,9 @@ struct MachineScreenContent2: View {
                     Spacer()
                 }
                 .transition(.move(edge: .top).combined(with: .opacity))
-                .zIndex(10)
+                .zIndex(4)
             }
-            
+
             // Toast de registro de ejercicio
             if showExerciseToast {
                 VStack {
@@ -119,18 +150,54 @@ struct MachineScreenContent2: View {
                         .padding(.bottom, 60)
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-                .zIndex(99)
+                .zIndex(5)
+            }
+
+            // Diálogo: Registrar y ver / Solo ver video
+            if showRegisterChoice {
+                Color.black.opacity(0.45).ignoresSafeArea()
+                    .zIndex(10)
+
+                RegisterChoiceDialog(
+                    title: "¿Registrar ejercicio?",
+                    message: "Elige si deseas registrar el ejercicio y ver el video de \(machine.name) o solo ver el video",
+                    primaryTitle: "Registrar y ver",
+                    secondaryTitle: "Solo ver video",
+                    accentHex: gym.safeColor,
+                    onPrimary: {
+                        guard let video = pendingVideoToPlay else { return }
+                        // Primero registramos
+                        ExerciseLogRepository.registerLogIfNeeded(video: video, machine: machine) { _ in
+                            showTransientExerciseToast()
+                        }
+                        // Luego abrimos player
+                        openPlayer(video)
+                    },
+                    onSecondary: {
+                        if let video = pendingVideoToPlay {
+                            openPlayer(video)
+                        }
+                    },
+                    onDismiss: {
+                        withAnimation { showRegisterChoice = false }
+                        pendingVideoToPlay = nil
+                    }
+                )
+                .zIndex(11)
             }
         }
         .preferredColorScheme(.light)
+        // Sheet con la descripción (se abre desde el botón info)
+        .sheet(isPresented: $showInfoSheet) {
+            MachineDescriptionSheet(machine: machine, accentHex: gym.safeColor)
+        }
+        // Player
         .fullScreenCover(item: $selectedVideo) { video in
             let dismissPlayer = {
                 selectedVideo = nil
                 if shouldShowFeedback2(feedbackFlags) {
                     showFeedbackDialog = true
                 }
-                videoToLog = video
-                showLogDialog = true
             }
             if (video.segments ?? []).isEmpty {
                 VideoPlayerView(video: video) {
@@ -140,9 +207,7 @@ struct MachineScreenContent2: View {
                 SegmentedVideoPlayerView(
                     video: video,
                     gymColor: Color(hex: gym.safeColor),
-                    onDismiss: {
-                        dismissPlayer()
-                    },
+                    onDismiss: { dismissPlayer() },
                     onAllSegmentsFinished: {
                         if shouldShowFeedback2(feedbackFlags) {
                             showFeedbackDialog = true
@@ -151,87 +216,7 @@ struct MachineScreenContent2: View {
                 )
             }
         }
-        .fullScreenCover(isPresented: $showLogDialog) {
-            GeometryReader { proxy in
-                ZStack(alignment: .bottom) {
-                    // Fondo negro translúcido
-                   
-
-                    // Bottom Sheet blanco full width & full bottom
-                    VStack(spacing: 16) {
-                        Capsule()
-                            .fill(Color.gray.opacity(0.4))
-                            .frame(width: 40, height: 6)
-                            .padding(.top, 8)
-
-                        Text("¿Vas a hacer este ejercicio ahora?")
-                            .font(.title3)
-                            .fontWeight(.black)
-                            .multilineTextAlignment(.center)
-
-                        Text("Si confirmas, lo agregaremos a tu historial de ejercicios realizados.")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-
-                        // Opciones tipo radio
-                        VStack(spacing: 12) {
-                            RadioOption(
-                                title: "Sí, haré el ejercicio",
-                                isSelected: logOption == .yes
-                            ) { logOption = .yes }
-
-                            RadioOption(
-                                title: "No, solo estaba explorando",
-                                isSelected: logOption == .no
-                            ) { logOption = .no }
-                        }
-                        .padding(.horizontal)
-
-                        Spacer()
-
-                        Button {
-                            if logOption == .yes, let video = videoToLog {
-                                ExerciseLogRepository.registerLogIfNeeded(video: video, machine: machine) { _ in
-                                    // 1️⃣ Cierra el modal primero
-                                    showLogDialog = false
-                                    // 2️⃣ Muestra el toast después de cerrar el modal
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                        withAnimation {
-                                            showExerciseToast = true
-                                        }
-                                        // Oculta el toast automáticamente tras 2 segundos
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                            withAnimation {
-                                                showExerciseToast = false
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                showLogDialog = false
-                            }
-                        } label: {
-                            Text("Confirmar")
-                                .foregroundColor(.black)
-                                .fontWeight(.bold)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color(hex: gym.safeColor))
-                                .cornerRadius(12)
-                        }
-                        .padding(.horizontal)
-                        .padding(.bottom, proxy.safeAreaInsets.bottom + 16)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(maxHeight: .infinity, alignment: .bottom)
-                    .background(Color.white.ignoresSafeArea())
-                    .cornerRadius(16, corners: [.topLeft, .topRight])                    
-                }
-            }
-        }
-
+        // Mantiene tu lógica de aparición del feedback
         .task(id: "\(hasWatchedAllVideos)-\(feedbackFlags.first?.isShowFeedback == true)") {
             if shouldShowFeedback2(feedbackFlags) {
                 showFeedbackDialog = true
@@ -244,8 +229,25 @@ struct MachineScreenContent2: View {
                 }
             }
         }
-        .background(Color(hex: "#F5F5F5").ignoresSafeArea())
+    }
 
+    // MARK: - Helpers
+
+    private func openPlayer(_ video: Video) {
+        withAnimation {
+            showRegisterChoice = false
+        }
+        pendingVideoToPlay = nil
+        selectedVideo = video
+    }
+
+    private func showTransientExerciseToast() {
+        DispatchQueue.main.async {
+            withAnimation { showExerciseToast = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                withAnimation { showExerciseToast = false }
+            }
+        }
     }
 
     private func dismissFeedback() {
@@ -265,148 +267,215 @@ struct MachineScreenContent2: View {
     }
 }
 
-extension View {
-  func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-    clipShape(RoundedCorner(radius: radius, corners: corners))
-  }
-}
+// MARK: - Dialogo custom “Registrar y ver / Solo ver video”
 
-struct RoundedCorner: Shape {
-  var radius: CGFloat
-  var corners: UIRectCorner
-  func path(in rect: CGRect) -> Path {
-    let path = UIBezierPath(
-      roundedRect: rect,
-      byRoundingCorners: corners,
-      cornerRadii: CGSize(width: radius, height: radius)
-    )
-    return Path(path.cgPath)
-  }
-}
-
-struct RadioOption: View {
+private struct RegisterChoiceDialog: View {
     let title: String
-    let isSelected: Bool
-    let action: () -> Void
+    let message: String
+    let primaryTitle: String
+    let secondaryTitle: String
+    let accentHex: String
+    let onPrimary: () -> Void
+    let onSecondary: () -> Void
+    let onDismiss: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
-                    .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .yellow : .gray)
-                Text(title)
-                    .foregroundColor(.black)
-                Spacer()
+        ZStack {
+            VStack(spacing: 16) {
+                // “tarjeta” centrada
+                VStack(spacing: 18) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(Color(hex: accentHex))
+                        .padding(.top, 12)
+
+                    Text(title)
+                        .font(.title3.bold())
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.center)
+
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+
+                    Button(action: onPrimary) {
+                        HStack {
+                            Image(systemName: "play.fill")
+                                .font(.headline)
+                            Text(primaryTitle)
+                                .fontWeight(.bold)
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(hex: accentHex))
+                        .cornerRadius(14)
+                    }
+
+                    Button(action: onSecondary) {
+                        HStack {
+                            Image(systemName: "info.circle")
+                                .font(.headline)
+                            Text(secondaryTitle)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.white)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                    }
+                    .padding(.bottom, 8)
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 16)
+                .background(Color.white)
+                .cornerRadius(24)
+                .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 10)
+
+                Button("Cancelar") { onDismiss() }
+                    .foregroundColor(.white)
+                    .padding(.vertical, 8)
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.yellow.opacity(0.2) : Color.white)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? Color.yellow : Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-            )
+            .padding(.horizontal, 24)
         }
     }
 }
 
-struct VideoRowView: View {
+// MARK: - Card de Video (diseño similar al adjunto)
+
+private struct VideoRowCard: View {
     let video: Video
-    let onTap: () -> Void
+    let onPlay: () -> Void
+    let onRegisterOnly: () -> Void
 
     var body: some View {
-        VStack {
-            HStack(alignment: .top, spacing: 12) {
-                ZStack(alignment: .center) {
-                    AsyncImage(url: URL(string: video.cover)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 100, height: 80)
-                            .clipped()
-                            .cornerRadius(8)
-                    } placeholder: {
-                        Color.gray.opacity(0.1)
-                            .frame(width: 100, height: 80)
-                            .cornerRadius(8)
-                    }
+        HStack(alignment: .center, spacing: 14) {
+            // Miniatura con botón de play
+            ZStack {
+                AsyncImage(url: URL(string: video.cover)) { img in
+                    img.resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 90, height: 120)
+                        .clipped()
+                        .cornerRadius(12)
+                } placeholder: {
+                    Color.gray.opacity(0.1)
+                        .frame(width: 90, height: 120)
+                        .cornerRadius(12)
+                }
+                
+                // Capa oscura encima de la miniatura
+                Color.black.opacity(0.35)
+                    .frame(width: 90, height: 120)
+                    .cornerRadius(12)
 
-                    // Capa blur
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.white.opacity(0.05)) // 👈 controla la intensidad del blur
-                            .blur(radius: 2)
-                            .frame(width: 100, height: 80)
-
-
+                Button(action: onPlay) {
                     Image(systemName: "play.fill")
-                        .foregroundColor(Color.accentColor.opacity(0.7))
-                        .padding(6)
-                        .background(Color.gray.opacity(0.7))
+                        .foregroundColor(Color.white.opacity(0.9))
+                        .padding(8)
+                        .background(Color.black.opacity(0.55))
                         .clipShape(Circle())
-                        .padding(6)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.accentColor, lineWidth: 2) // borde amarillo
+                        )
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                // “Categoría” principal si la tienes (toma el de mayor peso si aplica)
+                if let main = video.musclesWorked.sorted(by: { $0.value.weight > $1.value.weight }).first?.key {
+                    Text(main)
+                        .font(.caption.bold())
+                        .foregroundColor(.black.opacity(0.7))
                 }
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(video.title)
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.textTitle)
+                Text(video.title)
+                    .font(.headline)
+                    .foregroundColor(.black)
 
-                    ForEach(video.musclesWorked.sorted(by: { $0.value.weight > $1.value.weight }), id: \.key) { key, value in
-                        HStack {
-                            Text(key)
-                                .font(.caption)
-                                .foregroundColor(.textBody)
-
-                            Spacer()
-
-                            Text("\(value.weight)%")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.textTitle)
-                        }
+                // Chips de músculos secundarios (hasta 2 para evitar ruido)
+                HStack(spacing: 8) {
+                    ForEach(video.musclesWorked.sorted(by: { $0.value.weight > $1.value.weight }).prefix(2), id: \.key) { key, _ in
+                        Text(key)
+                            .font(.caption)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.black.opacity(0.05))
+                            .foregroundColor(.black.opacity(0.8))
+                            .cornerRadius(10)
                     }
                 }
-                .frame(maxWidth: .infinity) // 👈 hace que los HStack se expandan completamente
-                //Spacer()
+
+                // Botón registrar pequeño (opcional)
+                Button(action: onRegisterOnly) {
+                    HStack(spacing: 6) {
+                        Text("Registrar")
+                            .fontWeight(.bold)
+                        Image(systemName: "list.bullet.rectangle.portrait")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.accentColor)
+                    .cornerRadius(14)
+                }
+                .padding(.top, 4)
             }
+
+            Spacer()
         }
-        .padding()
+        .padding(16)
         .background(Color.white)
-        .cornerRadius(16)
+        .cornerRadius(20)
         .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
         .padding(.horizontal, 16)
-        .onTapGesture {
-            onTap()
+    }
+}
+
+// MARK: - Sheet con la descripción
+
+private struct MachineDescriptionSheet: View {
+    let machine: Machine
+    let accentHex: String
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(machine.name)
+                        .font(.title2.bold())
+                    Text(machine.description)
+                        .font(.body)
+                        .foregroundColor(.black.opacity(0.8))
+                }
+                .padding()
+            }
+            .navigationTitle("Información")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundColor(Color(hex: accentHex))
+                }
+            }
         }
     }
 }
 
-
-struct RoundedBottomShape2: Shape {
-    var radius: CGFloat = 30
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-
-        path.move(to: CGPoint(x: 0, y: 0))
-        path.addLine(to: CGPoint(x: rect.width, y: 0))
-        path.addLine(to: CGPoint(x: rect.width, y: rect.height - radius))
-        path.addQuadCurve(
-            to: CGPoint(x: 0, y: rect.height - radius),
-            control: CGPoint(x: rect.width / 2, y: rect.height + radius)
-        )
-        path.closeSubpath()
-
-        return path
-    }
-}
+// MARK: - Utilidades y componentes que ya usabas
 
 struct ToastView2: View {
     let message: String
-    
     var body: some View {
         Text(message)
             .font(.body)
@@ -425,24 +494,26 @@ private extension MachineScreenContent2 {
     func shouldShowFeedback2(_ flags: [ShowFeedback]) -> Bool {
         hasWatchedAllVideos && flags.first?.isShowFeedback != true
     }
+}
 
-    func dismissFeedback2() {
-        showFeedbackDialog = false
+// MARK: - Extensiones auxiliares
 
-        guard feedbackFlags.isEmpty else { return }
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
 
-        let flag = ShowFeedback(isShowFeedback: true)
-        context.insert(flag)
-
-        do {
-            try context.save()
-            withAnimation { showToast = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                withAnimation { showToast = false }
-            }
-        } catch {
-            print("⚠️ Error al guardar ShowFeedback: \(error)")
-        }
+struct RoundedCorner: Shape {
+    var radius: CGFloat
+    var corners: UIRectCorner
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
     }
 }
 
