@@ -164,7 +164,7 @@ struct SessionRow: View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 // Fecha relativa
-                Text(log.timestamp.formatted(.relative(presentation: .named, unitsStyle: .abbreviated)))
+                Text(relativeTime)
                     .font(.caption2)
                     .foregroundColor(Color(.systemGray))
                 
@@ -238,6 +238,32 @@ struct SessionRow: View {
         .background(Color.white)
         .cornerRadius(14)
         .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
+    }
+}
+
+private extension SessionRow {
+    /// Devuelve una cadena formateada dependiendo del tiempo transcurrido
+    /// desde la `timestamp` del registro hasta la fecha actual.
+    var relativeTime: String {
+        let now = Date()
+        let calendar = Calendar.current
+
+        if calendar.isDate(log.timestamp, inSameDayAs: now) {
+            let diff = now.timeIntervalSince(log.timestamp)
+
+            if diff < 3600 { // Menos de una hora
+                let minutes = max(Int(diff / 60), 1)
+                return "\(minutes) min"
+            } else { // Menos de un día
+                let hours = Int(diff / 3600)
+                return "\(hours) h"
+            }
+        } else {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "es_ES")
+            formatter.dateFormat = "EEEE"
+            return formatter.string(from: log.timestamp)
+        }
     }
 }
 
