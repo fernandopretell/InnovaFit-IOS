@@ -110,8 +110,14 @@ class MachineRepository {
                             return
                         }
 
-                        let machines = machineSnapshot?.documents.compactMap {
-                            try? $0.data(as: Machine.self)
+                        let machines = machineSnapshot?.documents.compactMap { doc -> Machine? in
+                            do {
+                                return try doc.data(as: Machine.self)
+                            } catch {
+                                print("❌ Error decodificando machine \(doc.documentID): \(error)")
+                                print("📄 Data: \(doc.data())")
+                                return nil
+                            }
                         } ?? []
 
                         print("📦 Máquinas cargadas: \(machines.count)")

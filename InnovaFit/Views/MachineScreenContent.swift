@@ -118,7 +118,8 @@ struct MachineScreenContent: View {
                             if let video = videoToLog {
                                 ExerciseLogRepository.registerLogIfNeeded(
                                     video: video,
-                                    machine: machine
+                                    machine: machine,
+                                    gymId: gym.id ?? ""
                                 ) { result in
                                     switch result {
                                     case .success(let created):

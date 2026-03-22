@@ -5,11 +5,16 @@ import FirebaseAuth
 struct RegisterView: View {
     @ObservedObject var viewModel: AuthViewModel
     @State private var name: String = ""
+    @State private var phoneNumber: String = ""
     @State private var birthDate: Date = Calendar.current.date(byAdding: .year, value: -15, to: Date()) ?? Date()
     @State private var selectedGym: Gym?
     @State private var isMale: Bool = true
     @State private var weightValue: Double = 60.0
     @State private var heightValue: Double = 170.0 // en cm
+
+    private var isGoogleAuth: Bool {
+        !viewModel.pendingGoogleName.isEmpty
+    }
 
     var body: some View {
         NavigationStack {
@@ -37,6 +42,26 @@ struct RegisterView: View {
                     .background(Color.backgroundFields)
                     .cornerRadius(12)
 
+                    // TELEFONO (solo para usuarios Google)
+                    if isGoogleAuth {
+                        ZStack(alignment: .leading) {
+                            if phoneNumber.isEmpty {
+                                Text("Numero de telefono")
+                                    .foregroundColor(.textPlaceholder)
+                                    .font(.system(size: 16))
+                                    .padding(.leading, 16)
+                            }
+
+                            TextField("", text: $phoneNumber)
+                                .keyboardType(.phonePad)
+                                .padding(.horizontal, 16)
+                                .frame(height: 48)
+                                .font(.system(size: 16))
+                                .foregroundColor(.textTitle)
+                        }
+                        .background(Color.backgroundFields)
+                        .cornerRadius(12)
+                    }
 
                     // FECHA DE NACIMIENTO
                     DatePicker("Fecha de nacimiento", selection: $birthDate, displayedComponents: .date)
@@ -103,13 +128,18 @@ struct RegisterView: View {
                         }
                     }
 
-                    // GÉNERO
+                    // GENERO
                     GenderToggleButton(isMale: $isMale)
 
-                    // BOTÓN DE REGISTRO
+                    // BOTON DE REGISTRO
                     Button(action: {
-                        if let gym = selectedGym,
-                           let phone = Auth.auth().currentUser?.phoneNumber {
+                        if let gym = selectedGym {
+                            let phone: String
+                            if isGoogleAuth {
+                                phone = phoneNumber.trimmingCharacters(in: .whitespaces)
+                            } else {
+                                phone = Auth.auth().currentUser?.phoneNumber ?? ""
+                            }
                             let edadCalculada = calcularEdad(from: birthDate)
                             let gender: String = isMale ? "M" : "F"
 
@@ -132,11 +162,18 @@ struct RegisterView: View {
                             .background(Color.innovaYellow)
                             .cornerRadius(24)
                     }
+                    .disabled(name.isEmpty || selectedGym == nil || (isGoogleAuth && phoneNumber.isEmpty))
                     .padding(.top, 10)
                 }
                 .padding()
             }
             .background(Color.white)
+        }
+        .onAppear {
+            // Pre-llenar nombre si viene de Google
+            if !viewModel.pendingGoogleName.isEmpty && name.isEmpty {
+                name = viewModel.pendingGoogleName
+            }
         }
     }
 
@@ -204,4 +241,3 @@ struct RegisterView_Previews: PreviewProvider {
             .background(Color.white)
     }
 }
-

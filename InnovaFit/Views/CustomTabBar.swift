@@ -5,7 +5,6 @@
 //  Created by Fernando Pretell Lozano on 11/07/25.
 //
 
-import SwiftUICore
 import SwiftUI
 
 

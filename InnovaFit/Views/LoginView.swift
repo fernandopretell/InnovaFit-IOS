@@ -7,14 +7,57 @@ struct LoginView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("Iniciar sesión")
+            Text("Bienvenido a InnovaFit")
                 .font(.title)
                 .bold()
                 .foregroundColor(Color(hex: "#111111"))
 
+            Text("Inicia sesion para continuar")
+                .font(.subheadline)
+                .foregroundColor(.textPlaceholder)
+
+            // Boton Google Sign-In
+            Button(action: {
+                viewModel.signInWithGoogle()
+            }) {
+                HStack(spacing: 12) {
+                    Image("ic_google")
+                        .resizable()
+                        .frame(width: 20, height: 20)
+
+                    Text("Continuar con Google")
+                        .fontWeight(.medium)
+                        .foregroundColor(Color(hex: "#111111"))
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                )
+            }
+            .disabled(viewModel.isLoading)
+
+            // Separador
+            HStack {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: 1)
+
+                Text("o")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                    .padding(.horizontal, 8)
+
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: 1)
+            }
+
+            // Campo telefono
             ZStack(alignment: .leading) {
                 if viewModel.phoneNumber.isEmpty {
-                    Text("Número de celular")
+                    Text("Numero de celular")
                         .background(Color.white)
                         .foregroundColor(.textPlaceholder)
                         .padding(.leading, 16)
@@ -44,7 +87,7 @@ struct LoginView: View {
                         .background(Color.accentColor)
                         .cornerRadius(28)
                 } else {
-                    Text("Enviar código")
+                    Text("Enviar codigo")
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -53,18 +96,27 @@ struct LoginView: View {
                         .cornerRadius(28)
                 }
             }
-            .disabled(viewModel.isLoading)
+            .disabled(viewModel.isLoading || viewModel.phoneNumber.isEmpty)
+
+            // Error message
+            if let error = viewModel.errorMessage {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
 
             Spacer()
+
+            Text("Al continuar, aceptas nuestros terminos y condiciones")
+                .font(.caption2)
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
         }
         .padding()
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Color.white)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                isPhoneFocused = true
-            }
-        }
     }
 }
 
@@ -79,4 +131,3 @@ struct LoginView_Previews: PreviewProvider {
             .background(Color.white)
     }
 }
-

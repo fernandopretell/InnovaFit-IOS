@@ -15,4 +15,5 @@ struct UserProfile: Codable, Identifiable {
     var gym: Gym?
     var weight: Double
     var height: Double
+    var authProvider: String?
 }

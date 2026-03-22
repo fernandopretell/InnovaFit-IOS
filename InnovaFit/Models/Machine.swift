@@ -8,5 +8,5 @@ struct Machine: Identifiable, Codable, Hashable {
     let description: String
     let imageUrl: String
     let defaultVideos: [Video]
+    var location: String? = nil
 }
-

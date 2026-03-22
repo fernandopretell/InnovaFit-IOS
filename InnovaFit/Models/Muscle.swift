@@ -8,8 +8,7 @@
 
 struct Muscle: Codable, Equatable, Hashable {
     let weight: Int
-    let icon: String
-
+    var icon: String? = nil
 }
 
 

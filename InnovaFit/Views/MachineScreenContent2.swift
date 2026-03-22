@@ -104,7 +104,11 @@ struct MachineScreenContent2: View {
                                 },
                                 onRegisterOnly: {
                                     // Registrar sin abrir player (si quisieras)
-                                    ExerciseLogRepository.registerLogIfNeeded(video: vid, machine: machine) { _ in
+                                    ExerciseLogRepository.registerLogIfNeeded(
+                                        video: vid,
+                                        machine: machine,
+                                        gymId: gym.id ?? ""
+                                    ) { _ in
                                         showTransientExerciseToast()
                                     }
                                 }
@@ -167,7 +171,11 @@ struct MachineScreenContent2: View {
                     onPrimary: {
                         guard let video = pendingVideoToPlay else { return }
                         // Primero registramos
-                        ExerciseLogRepository.registerLogIfNeeded(video: video, machine: machine) { _ in
+                        ExerciseLogRepository.registerLogIfNeeded(
+                            video: video,
+                            machine: machine,
+                            gymId: gym.id ?? ""
+                        ) { _ in
                             showTransientExerciseToast()
                         }
                         // Luego abrimos player

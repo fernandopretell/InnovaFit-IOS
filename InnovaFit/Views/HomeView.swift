@@ -3,22 +3,31 @@ import FirebaseAuth
 
 struct HomeView: View {
     @ObservedObject var viewModel: AuthViewModel
-    @StateObject private var machineVM = MachineViewModel()
+    @ObservedObject var routineVM: RoutineViewModel
+    @ObservedObject var machineVM: MachineViewModel
 
-    // Nueva prop para navegación hacia MachineScreenContent2
     var onSelectMachine: (Machine, Gym) -> Void
+    var onNavigateToSearch: () -> Void
+    var onNavigateToRoutine: () -> Void
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 if let profile = viewModel.userProfile {
-                    // 👤 Encabezado
+                    // Header
                     HStack {
-                        Text("Hola, \(profile.name) 👋")
+                        Text("Hola, \(profile.name.components(separatedBy: " ").first ?? profile.name) 👋")
                             .font(.title2.bold())
                             .foregroundColor(.textTitle)
 
                         Spacer()
+
+                        Button(action: onNavigateToSearch) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.textTitle)
+                        }
+                        .padding(.trailing, 8)
 
                         Menu {
                             Button("Cerrar sesión", role: .destructive) {
@@ -32,15 +41,36 @@ struct HomeView: View {
                     }
                     .padding(.top)
 
-                    // 🏋️ Texto con gimnasio en negrita
-                    (
-                        Text("Estas son las máquinas disponibles en ")
-                        + Text(profile.gym?.name ?? "").fontWeight(.bold)
-                    )
-                    .font(.body)
-                    .foregroundColor(.textBody)
+                    // Routine banner
+                    if let routine = routineVM.routine {
+                        if routineVM.isRoutineStarted {
+                            RoutineBannerCard(
+                                routine: routine,
+                                routineVM: routineVM,
+                                onTap: onNavigateToRoutine
+                            )
+                        } else {
+                            StartRoutineBannerCard(
+                                routine: routine,
+                                onTap: onNavigateToRoutine
+                            )
+                        }
+                    }
 
-                    // 🛠️ Lista de máquinas
+                    // Gym subtitle
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Estas son las máquinas disponibles en")
+                            .font(.body)
+                            .foregroundColor(.textBody)
+                        (
+                            Text("📍 ")
+                            + Text(profile.gym?.name ?? "").fontWeight(.bold)
+                        )
+                        .font(.body)
+                        .foregroundColor(.textBody)
+                    }
+
+                    // Machine list
                     if let gym = profile.gym {
                         ForEach(machineVM.machines) { machine in
                             Button {
@@ -54,15 +84,172 @@ struct HomeView: View {
             }
             .padding(.horizontal)
             .padding(.top)
-            .onAppear {
+            .task(id: viewModel.userProfile?.gymId) {
                 if let gymId = viewModel.userProfile?.gymId {
                     machineVM.loadMachines(forGymId: gymId)
+                }
+            }
+            .task(id: viewModel.userProfile?.id) {
+                if let userId = viewModel.userProfile?.id {
+                    routineVM.loadRoutine(userId: userId)
                 }
             }
         }
         .background(Color(hex: "#F5F5F5").ignoresSafeArea())
     }
 }
+
+// MARK: - Routine Banner (active/started)
+
+struct RoutineBannerCard: View {
+    let routine: Routine
+    @ObservedObject var routineVM: RoutineViewModel
+    let onTap: () -> Void
+
+    private let accent = Color(hex: "#FDD835")
+
+    private var todayDay: RoutineDay? {
+        routine.days[safe: routineVM.todayDayIndex]
+    }
+
+    private var dayLabel: String {
+        guard let day = todayDay else { return "" }
+        let num = day.dayNumber
+        if day.isRest { return "Día \(num): Descanso" }
+        let label = day.label.isEmpty ? (routine.objective.isEmpty ? "Entrenamiento" : routine.objective) : day.label
+        return "Día \(num): \(label)"
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 8) {
+                    // Yellow dot + RUTINA ACTIVA
+                    HStack(spacing: 6) {
+                        Circle().fill(accent).frame(width: 8, height: 8)
+                        Text("RUTINA ACTIVA")
+                            .font(.system(size: 11, weight: .heavy))
+                            .foregroundColor(accent)
+                            .tracking(1)
+                    }
+
+                    // Day label
+                    Text(dayLabel)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+
+                    // Weekly progress circles
+                    let stats = routineVM.weeklyStats
+                    if !stats.weeklyProgress.isEmpty {
+                        HStack(spacing: 12) {
+                            ForEach(Array(stats.weeklyProgress.enumerated()), id: \.offset) { index, progress in
+                                VStack(spacing: 4) {
+                                    ZStack {
+                                        Circle()
+                                            .stroke(Color.white.opacity(0.2), lineWidth: 3)
+                                            .frame(width: 28, height: 28)
+                                        Circle()
+                                            .trim(from: 0, to: CGFloat(max(0, progress)))
+                                            .stroke(accent, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                                            .rotationEffect(.degrees(-90))
+                                            .frame(width: 28, height: 28)
+                                        Text(progress >= 0 ? "\(Int(progress * 100))" : "--")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.white)
+                                    }
+                                    .frame(width: 32, height: 32)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(index == stats.currentWeekIndex ? accent : Color.clear, lineWidth: 1.5)
+                                            .frame(width: 32, height: 32)
+                                    )
+
+                                    Text("S\(stats.windowStart + index + 1)")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.white.opacity(0.6))
+                                }
+                            }
+                        }
+                    }
+
+                    // Streak
+                    if stats.streak > 0 {
+                        Text("🔥 Racha: \(stats.streak) semana\(stats.streak > 1 ? "s" : "") al 80%+")
+                            .font(.system(size: 11))
+                            .foregroundColor(accent.opacity(0.9))
+                    }
+                }
+
+                Spacer()
+
+                // Ver Rutina button
+                Text("Ver Rutina →")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(accent)
+                    .cornerRadius(24)
+            }
+            .padding(16)
+            .background(
+                LinearGradient(
+                    colors: [Color(hex: "#2A2A2A"), Color(hex: "#1A1A1A")],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 3)
+        }
+    }
+}
+
+// MARK: - Start Routine Banner
+
+struct StartRoutineBannerCard: View {
+    let routine: Routine
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("NUEVA RUTINA")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundColor(.black.opacity(0.6))
+                        .tracking(1.5)
+
+                    Text(routine.name)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.black)
+                        .lineLimit(2)
+
+                    Text("\(routine.durationWeeks) semanas · \(routine.days.count) días")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
+
+                Spacer()
+
+                Text("Iniciar →")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.accentColor)
+                    .cornerRadius(20)
+            }
+            .padding(16)
+            .background(Color.white)
+            .cornerRadius(18)
+            .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+        }
+    }
+}
+
+// MARK: - Machine Card
 
 struct MachineCardView: View {
     let machine: Machine
@@ -88,22 +275,15 @@ struct MachineCardView: View {
                 AsyncImage(url: URL(string: machine.imageUrl)) { phase in
                     switch phase {
                     case .empty:
-                        // Mientras carga, mostramos spinner sobre fondo gris claro
                         ZStack {
                             Color(hex:"#CACCD3")
                             ProgressView()
-                                .progressViewStyle(
-                                    CircularProgressViewStyle(tint: .gray)
-                                )
+                                .progressViewStyle(CircularProgressViewStyle(tint: .gray))
                                 .scaleEffect(1.2)
                         }
                     case .success(let image):
-                        // Imagen descargada
-                        image
-                            .resizable()
-                            .scaledToFill()
+                        image.resizable().scaledToFill()
                     case .failure:
-                        // Si falla, fondo gris con icono de mancuerna
                         ZStack {
                             Color(.systemGray5)
                             Image(systemName: "dumbbell.fill")
@@ -113,13 +293,10 @@ struct MachineCardView: View {
                                 .foregroundColor(.gray.opacity(0.7))
                         }
                     @unknown default:
-                        // Para futuros casos
                         ZStack {
                             Color(.systemGray5)
                             ProgressView()
-                                .progressViewStyle(
-                                    CircularProgressViewStyle(tint: .gray)
-                                )
+                                .progressViewStyle(CircularProgressViewStyle(tint: .gray))
                                 .scaleEffect(1.2)
                         }
                     }
@@ -127,7 +304,6 @@ struct MachineCardView: View {
                 .frame(width: 80, height: 80)
                 .clipped()
                 .cornerRadius(10)
-
             }
 
             HStack {
@@ -147,48 +323,3 @@ struct MachineCardView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
     }
 }
-
-/*struct HomeView_Previews: PreviewProvider {
-    static var previews: some View {
-        HomeView(viewModel: Mock2AuthViewModel())
-            .environmentObject(Mock2AuthViewModel())
-            .environment(\.colorScheme, .light)
-            .previewDevice("iPhone 15")
-            .previewDisplayName("HomeView - Gym Machines")
-    }
-}
-
-
-class Mock2AuthViewModel: AuthViewModel {
-    override init() {
-        super.init()
-        self.userProfile = UserProfile(
-            id: "123",
-            name: "Liam",
-            phoneNumber: "+51999999999",
-            age: 25,
-            gender: .masculino,
-            gymId: "gym_001",
-            gym: Gym(id: "gym_001",
-                     address: "Av. Ejemplo 123",
-                     color: "#FFD600",
-                     name: "Fitness First",
-                     owner: "Juan Pérez",
-                     phone: "+51999999999",
-                     isActive: true),
-            weight: 70.0,
-            height: 175.0
-        )
-    }
-}
-
-class MockMachineViewModel: MachineViewModel {
-    override init() {
-        super.init()
-        self.machines = [
-            Machine(name: "Leg Press", description: "Learn how to use the leg press machine safely and effectively.", defaultVideos: []),
-                        Machine(name: "Treadmill", description: "Get started with the treadmill for cardio workouts.", defaultVideos: [])
-        ]
-    }
-}*/
-

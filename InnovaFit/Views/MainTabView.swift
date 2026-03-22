@@ -4,6 +4,7 @@ struct MainTabView: View {
     @ObservedObject var viewModel: AuthViewModel
     @EnvironmentObject private var appDelegate: AppDelegate
     @StateObject private var machineVM = MachineViewModel()
+    @StateObject private var routineVM = RoutineViewModel()
     @State private var selectedTab: Tab = .home
     @State private var navigationPath: [TabsRoute] = []
     @State private var showErrorAlert = false
@@ -64,6 +65,29 @@ struct MainTabView: View {
                             }
                         }
                     }
+                case .machineSearch:
+                    SwipeBackNavigation {
+                        MachineSearchView(
+                            machines: machineVM.machines,
+                            gym: viewModel.userProfile?.gym ?? Gym(address: "", color: nil, name: "", owner: "", phone: "", isActive: false),
+                            onSelectMachine: { machine, gym in
+                                navigationPath.append(.machine(machine: machine, gym: gym))
+                            },
+                            onBack: {
+                                navigationPath.removeLast()
+                            }
+                        )
+                    }
+                case .routine:
+                    SwipeBackNavigation {
+                        RoutineView(
+                            routineVM: routineVM,
+                            gymId: viewModel.userProfile?.gymId ?? "",
+                            userId: viewModel.userProfile?.id ?? "",
+                            gymColor: Color(hex: viewModel.userProfile?.gym?.safeColor ?? "#FDD835"),
+                            onBack: { navigationPath.removeLast() }
+                        )
+                    }
                 }
             }
             .onAppear {
@@ -105,6 +129,20 @@ struct MainTabView: View {
                     machineVM.hasLoadedTag = false
                 }
             }
+            .onChange(of: appDelegate.pendingRoutineNotification) { _, notification in
+                if notification != nil {
+                    selectedTab = .home
+                    // Reload routine data and navigate
+                    if let userId = viewModel.userProfile?.id {
+                        routineVM.loadRoutine(userId: userId)
+                    }
+                    // Navigate to routine screen
+                    if !navigationPath.contains(.routine) {
+                        navigationPath.append(.routine)
+                    }
+                    appDelegate.pendingRoutineNotification = nil
+                }
+            }
             .alert("No se encontró una máquina activa para este código.", isPresented: $showErrorAlert) {
                 Button("Aceptar", role: .cancel) {}
             }
@@ -120,8 +158,16 @@ struct MainTabView: View {
         case .home:
             HomeView(
                 viewModel: viewModel,
+                routineVM: routineVM,
+                machineVM: machineVM,
                 onSelectMachine: { machine, gym in
                     navigationPath.append(.machine(machine: machine, gym: gym))
+                },
+                onNavigateToSearch: {
+                    navigationPath.append(.machineSearch)
+                },
+                onNavigateToRoutine: {
+                    navigationPath.append(.routine)
                 }
             )
         case .history:

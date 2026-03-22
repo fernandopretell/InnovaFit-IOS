@@ -33,8 +33,8 @@ class SVGImageLoader: ObservableObject {
         currentTasks.removeAll()
 
         for muscle in muscles {
-            guard let url = URL(string: muscle.muscle.icon) else {
-                print("⚠️ URL inválida para \(muscle.name): \(muscle.muscle.icon)")
+            guard let iconStr = muscle.muscle.icon, let url = URL(string: iconStr) else {
+                print("⚠️ URL inválida para \(muscle.name): \(muscle.muscle.icon ?? "nil")")
                 continue
             }
 

@@ -105,7 +105,7 @@ struct ShareCardView: View {
     private var cardContent: some View {
         ZStack {
             // Fondo del card
-            Color.accentColor
+            Color.white
             content
 
             /*if logs.isEmpty {
@@ -159,12 +159,12 @@ struct ShareCardView: View {
     // MARK: - Pastilla gimnasio (más grande)
     private var gymBadge: some View {
         Text(authViewModel.userProfile?.gym?.name ?? "")
-            .font(.title3.weight(.black)) // más grande
+            .font(.title3.weight(.heavy)) // más grande
             .lineLimit(1)
             .minimumScaleFactor(0.7)
             .padding(.horizontal, 14)
             .padding(.vertical, 16)
-            .background(Color.white.cornerRadius(12))
+            .background(Color.accentColor.cornerRadius(12))
             .foregroundColor(.black)
     }
 
@@ -244,13 +244,13 @@ struct ShareCardView: View {
             ForEach(segments) { seg in
                 SectorMark(
                     angle: .value("Count", seg.count),
-                    innerRadius: .ratio(0.7),
+                    innerRadius: .ratio(0.8),
                     angularInset: 1
                 )
                 .foregroundStyle(seg.color)
             }
         }
-        .frame(height: 180) // baja un poco para que todo encaje
+        .frame(height: 160) // baja un poco para que todo encaje
         .chartBackground { proxy in
             VStack(spacing: 0) {
                 Text("\(totalCount)")
@@ -278,7 +278,7 @@ struct ShareCardView: View {
                     Circle()
                         .fill(seg.color)
                         .frame(width: 10, height: 10)
-                    Text("\(seg.muscle) \(Int(round((Double(seg.count) / max(1, Double(totalCount))) * 100)))%")
+                    Text("\(seg.muscle) (\(Int(round((Double(seg.count) / max(1, Double(totalCount))) * 100)))%)")
                         .font(.caption).bold()
                         .foregroundColor(.black)
                         .lineLimit(1)
@@ -308,7 +308,7 @@ struct ShareCardView: View {
                     .foregroundColor(.accentColor)
                     .multilineTextAlignment(.center)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(Color.black.cornerRadius(12))
         }
@@ -319,14 +319,17 @@ struct ShareCardView: View {
         HStack(spacing: 6) {
             Text("Entrena con")
                 .font(.caption)
-                .foregroundColor(.black)
+                .foregroundColor(.black.opacity(0.8))
             Image("AppLogoBlack")
                 .resizable()
+                .renderingMode(.template) // Permite aplicar tint
+                .foregroundColor(.black.opacity(0.8))   // Aplica el mismo color
                 .scaledToFit()
                 .frame(width: 85, height: 20)
         }
         .padding(.bottom, 16)
     }
+
 }
 
 // MARK: - Snapshot helper

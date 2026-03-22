@@ -4,19 +4,23 @@ struct ContentView: View {
     @StateObject var authViewModel = AuthViewModel()
 
     var body: some View {
-        NavigationStack {
-            switch authViewModel.authState {
-            case .splash:
-                SplashView()
-            case .login:
+        switch authViewModel.authState {
+        case .splash:
+            SplashView()
+        case .login:
+            NavigationStack {
                 LoginView(viewModel: authViewModel)
-            case .otp:
-                OTPVerificationView(viewModel: authViewModel)
-            case .register:
-                RegisterView(viewModel: authViewModel)
-            case .home:
-                MainTabView(viewModel: authViewModel)
             }
+        case .otp:
+            NavigationStack {
+                OTPVerificationView(viewModel: authViewModel)
+            }
+        case .register:
+            NavigationStack {
+                RegisterView(viewModel: authViewModel)
+            }
+        case .home:
+            MainTabView(viewModel: authViewModel)
         }
     }
 }

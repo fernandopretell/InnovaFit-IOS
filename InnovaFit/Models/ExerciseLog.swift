@@ -12,6 +12,7 @@ import FirebaseFirestore
 /// Registro de un ejercicio completado por el usuario
 struct ExerciseLog: Identifiable, Codable {
     @DocumentID var id: String?
+    let gymId: String
     let machineId: String
     let machineName: String
     let machineImageUrl: String

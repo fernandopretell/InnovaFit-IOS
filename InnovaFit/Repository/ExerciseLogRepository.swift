@@ -9,10 +9,12 @@ class ExerciseLogRepository {
     /// - Parameters:
     ///   - video: Video que se reprodujo.
     ///   - machine: Máquina asociada al video.
+    ///   - gymId: ID del gimnasio donde se registró el ejercicio.
     ///   - completion: Callback con `true` si se registró un nuevo log.
     static func registerLogIfNeeded(
         video: Video,
         machine: Machine,
+        gymId: String,
         completion: @escaping (Result<Bool, Error>) -> Void
     ) {
         guard let userId = Auth.auth().currentUser?.uid,
@@ -55,6 +57,7 @@ class ExerciseLogRepository {
 
                 let data: [String: Any] = [
                     "userId": userId,
+                    "gymId": gymId,
                     "videoId": video.id,
                     "videoTitle": video.title,
                     "machineId": machineId,

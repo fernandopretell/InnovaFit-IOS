@@ -9,4 +9,6 @@
 enum TabsRoute: Hashable, Codable {
     case qrScanner
     case machine(machine: Machine, gym: Gym)
+    case machineSearch
+    case routine
 }
