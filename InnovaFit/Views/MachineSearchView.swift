@@ -107,7 +107,7 @@ struct MachineSearchView: View {
                 }
             }
         }
-        .background(Color(hex: "#F5F5F5").ignoresSafeArea())
+        .background(Color(hex: "#FBFCF8").ignoresSafeArea())
         .navigationBarHidden(true)
     }
 }

@@ -204,7 +204,8 @@ class AuthViewModel: ObservableObject {
         gym: Gym,
         phone: String,
         weight: Double,
-        height: Double
+        height: Double,
+        medicalConditions: String = ""
     ) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let profile = UserProfile(
@@ -217,7 +218,8 @@ class AuthViewModel: ObservableObject {
             gym: gym,
             weight: weight,
             height: height,
-            authProvider: pendingAuthProvider
+            authProvider: pendingAuthProvider,
+            medicalConditions: medicalConditions.isEmpty ? nil : medicalConditions
         )
         repository.saveUserProfile(profile) { [weak self] result in
             DispatchQueue.main.async {

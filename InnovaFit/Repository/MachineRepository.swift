@@ -92,7 +92,16 @@ class MachineRepository {
                     return
                 }
 
-                let machineIds = documents.compactMap { $0["machineId"] as? String }
+                // Extraer machineId y location de cada documento gym_machines
+                var machineIds: [String] = []
+                var locationById: [String: String] = [:]
+                for doc in documents {
+                    guard let machineId = doc["machineId"] as? String else { continue }
+                    machineIds.append(machineId)
+                    if let location = doc["location"] as? String, !location.isEmpty {
+                        locationById[machineId] = location
+                    }
+                }
                 print("✅ IDs de máquinas encontrados: \(machineIds)")
 
                 guard !machineIds.isEmpty else {
@@ -101,32 +110,69 @@ class MachineRepository {
                     return
                 }
 
-                db.collection("machines")
-                    .whereField(FieldPath.documentID(), in: machineIds)
-                    .getDocuments { machineSnapshot, error in
-                        if let error = error {
-                            print("❌ Error al consultar machines: \(error.localizedDescription)")
-                            completion(.failure(error))
-                            return
-                        }
+                // Firestore limita el operador `in` a 10 valores.
+                let batchLimit = 10
+                let uniqueIds = Array(Set(machineIds))
+                let chunks: [[String]] = stride(from: 0, to: uniqueIds.count, by: batchLimit).map {
+                    Array(uniqueIds[$0 ..< min($0 + batchLimit, uniqueIds.count)])
+                }
 
-                        let machines = machineSnapshot?.documents.compactMap { doc -> Machine? in
-                            do {
-                                return try doc.data(as: Machine.self)
-                            } catch {
-                                print("❌ Error decodificando machine \(doc.documentID): \(error)")
-                                print("📄 Data: \(doc.data())")
-                                return nil
+                print("🔧 Consultando machines en \(chunks.count) lote(s)")
+
+                let machinesCollection = db.collection("machines")
+                let group = DispatchGroup()
+                var firstError: Error?
+                var fetchedById: [String: Machine] = [:]
+
+                for chunk in chunks {
+                    group.enter()
+                    machinesCollection
+                        .whereField(FieldPath.documentID(), in: chunk)
+                        .getDocuments { machineSnapshot, error in
+                            if let error = error {
+                                if firstError == nil { firstError = error }
+                                print("❌ Error al consultar machines (lote): \(error.localizedDescription)")
+                                group.leave()
+                                return
                             }
-                        } ?? []
 
-                        print("📦 Máquinas cargadas: \(machines.count)")
-                        machines.forEach { print("🔹 \($0.name)") }
+                            machineSnapshot?.documents.forEach { doc in
+                                do {
+                                    var machine = try doc.data(as: Machine.self)
+                                    // Asignar location desde gym_machines
+                                    if let loc = locationById[doc.documentID] {
+                                        machine.location = loc
+                                    }
+                                    fetchedById[doc.documentID] = machine
+                                } catch {
+                                    print("❌ Error decodificando machine \(doc.documentID): \(error)")
+                                    print("📄 Data: \(doc.data())")
+                                }
+                            }
+                            group.leave()
+                        }
+                }
 
-                        completion(.success(machines))
+                group.notify(queue: .main) {
+                    if let error = firstError {
+                        completion(.failure(error))
+                        return
                     }
+
+                    // Preservar el orden según machineIds, sin duplicados
+                    var seen = Set<String>()
+                    let orderedMachines: [Machine] = machineIds.compactMap { id in
+                        guard !seen.contains(id), let m = fetchedById[id] else { return nil }
+                        seen.insert(id)
+                        return m
+                    }
+
+                    print("📦 Máquinas cargadas: \(orderedMachines.count)")
+                    orderedMachines.forEach { print("🔹 \($0.name) - 📍 \($0.location ?? "sin ubicación")") }
+
+                    completion(.success(orderedMachines))
+                }
             }
     }
 
 }
-

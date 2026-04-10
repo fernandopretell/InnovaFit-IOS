@@ -9,6 +9,7 @@ struct Gym: Codable, Identifiable, Hashable {
     let owner: String
     let phone: String
     let isActive: Bool
+    var isQrEnabled: Bool? = true
     
     var safeColor: String {
             color ?? "#FDD835" // color hexadecimal por defecto

@@ -22,33 +22,64 @@ struct MainTabView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     // Custom Tab Bar
-                    HStack(alignment: .bottom) {
-                        TabBarItem(
-                            label: "Inicio",
-                            iconName: "house.fill",
-                            isSelected: selectedTab == .home,
-                            action: { withAnimation(.spring()) { selectedTab = .home } }
-                        )
+                    let qrEnabled = viewModel.userProfile?.gym?.isQrEnabled ?? true
 
-                        ScannerTabButton(proxy: proxy)
+                    if qrEnabled {
+                        HStack(alignment: .bottom) {
+                            TabBarItem(
+                                label: "Inicio",
+                                iconName: "house.fill",
+                                isSelected: selectedTab == .home,
+                                action: { withAnimation(.spring()) { selectedTab = .home } }
+                            )
 
-                        TabBarItem(
-                            label: "Historial",
-                            iconName: "clock.arrow.circlepath",
-                            isSelected: selectedTab == .history,
-                            action: { withAnimation(.spring()) { selectedTab = .history } }
-                        )
+                            ScannerTabButton(proxy: proxy)
+
+                            TabBarItem(
+                                label: "Historial",
+                                iconName: "clock.arrow.circlepath",
+                                isSelected: selectedTab == .history,
+                                action: { withAnimation(.spring()) { selectedTab = .history } }
+                            )
+                        }
+                        .font(.footnote)
+                        .padding(.horizontal, 10)
+                        .padding(.bottom, max(0, 8 - proxy.safeAreaInsets.bottom))
+                        .background {
+                            TabBarShape()
+                                .fill(.white)
+                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: -2)
+                                .ignoresSafeArea()
+                        }
+                        .frame(maxHeight: .infinity, alignment: .bottom)
+                    } else {
+                        HStack {
+                            TabBarItem(
+                                label: "Inicio",
+                                iconName: "house.fill",
+                                isSelected: selectedTab == .home,
+                                action: { withAnimation(.spring()) { selectedTab = .home } }
+                            )
+
+                            TabBarItem(
+                                label: "Historial",
+                                iconName: "clock.arrow.circlepath",
+                                isSelected: selectedTab == .history,
+                                action: { withAnimation(.spring()) { selectedTab = .history } }
+                            )
+                        }
+                        .font(.footnote)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .padding(.bottom, max(0, 8 - proxy.safeAreaInsets.bottom))
+                        .background {
+                            Rectangle()
+                                .fill(.white)
+                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: -2)
+                                .ignoresSafeArea()
+                        }
+                        .frame(maxHeight: .infinity, alignment: .bottom)
                     }
-                    .font(.footnote)
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, max(0, 8 - proxy.safeAreaInsets.bottom))
-                    .background {
-                        TabBarShape()
-                            .fill(.white)
-                            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: -2)
-                            .ignoresSafeArea()
-                    }
-                    .frame(maxHeight: .infinity, alignment: .bottom)
                 }
             }
             .navigationDestination(for: TabsRoute.self) { route in

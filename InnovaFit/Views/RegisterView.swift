@@ -11,6 +11,8 @@ struct RegisterView: View {
     @State private var isMale: Bool = true
     @State private var weightValue: Double = 60.0
     @State private var heightValue: Double = 170.0 // en cm
+    @State private var medicalConditions: String = ""
+    @State private var showGymPicker = false
 
     private var isGoogleAuth: Bool {
         !viewModel.pendingGoogleName.isEmpty
@@ -108,28 +110,49 @@ struct RegisterView: View {
                     }
 
                     // SELECCIONAR GIMNASIO
-                    Menu {
-                        ForEach(viewModel.gyms) { gym in
-                            Button(action: {
-                                selectedGym = gym
-                            }) {
-                                Text(gym.name)
-                            }
-                        }
+                    Button {
+                        showGymPicker = true
                     } label: {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.backgroundFields)
-                                .frame(height: 48)
-
+                        HStack {
                             Text(selectedGym?.name ?? "Seleccionar gimnasio")
+                                .font(.system(size: 16))
                                 .foregroundColor(selectedGym == nil ? .textPlaceholder : .textTitle)
-                                .frame(maxWidth: .infinity)
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.textPlaceholder)
                         }
+                        .padding(.horizontal, 16)
+                        .frame(height: 48)
+                        .background(Color.backgroundFields)
+                        .cornerRadius(12)
                     }
 
                     // GENERO
                     GenderToggleButton(isMale: $isMale)
+
+                    // CONDICIONES MÉDICAS (opcional)
+                    ZStack(alignment: .topLeading) {
+                        if medicalConditions.isEmpty {
+                            Text("Lesiones o condiciones médicas (opcional)")
+                                .foregroundColor(.textPlaceholder)
+                                .font(.system(size: 16))
+                                .padding(.leading, 16)
+                                .padding(.top, 14)
+                        }
+
+                        TextEditor(text: $medicalConditions)
+                            .font(.system(size: 16))
+                            .foregroundColor(.textTitle)
+                            .scrollContentBackground(.hidden)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .frame(minHeight: 80, maxHeight: 120)
+                    }
+                    .background(Color.backgroundFields)
+                    .cornerRadius(12)
 
                     // BOTON DE REGISTRO
                     Button(action: {
@@ -150,7 +173,8 @@ struct RegisterView: View {
                                 gym: gym,
                                 phone: phone,
                                 weight: weightValue,
-                                height: heightValue
+                                height: heightValue,
+                                medicalConditions: medicalConditions.trimmingCharacters(in: .whitespacesAndNewlines)
                             )
                         }
                     }) {
@@ -168,6 +192,17 @@ struct RegisterView: View {
                 .padding()
             }
             .background(Color.white)
+            .fullScreenCover(isPresented: $showGymPicker) {
+                GymPickerView(
+                    gyms: viewModel.gyms,
+                    selectedGym: selectedGym,
+                    onSelect: { gym in
+                        selectedGym = gym
+                        showGymPicker = false
+                    },
+                    onDismiss: { showGymPicker = false }
+                )
+            }
         }
         .onAppear {
             // Pre-llenar nombre si viene de Google
@@ -230,6 +265,174 @@ struct GenderToggleButton: View {
 }
 
 
+
+// MARK: - Gym Picker (Full Screen)
+
+struct GymPickerView: View {
+    let gyms: [Gym]
+    let selectedGym: Gym?
+    let onSelect: (Gym) -> Void
+    let onDismiss: () -> Void
+
+    @State private var searchText = ""
+    @FocusState private var isSearchFocused: Bool
+
+    private var filteredGyms: [Gym] {
+        if searchText.isEmpty { return gyms }
+        return gyms.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "#171712"))
+                        .frame(width: 36, height: 36)
+                        .background(Color(hex: "#F4F2E6"))
+                        .clipShape(Circle())
+                }
+
+                Spacer()
+
+                Text("Selecciona tu gimnasio")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(Color(hex: "#171712"))
+
+                Spacer()
+
+                Color.clear.frame(width: 36, height: 36)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+
+            // Search bar
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 16))
+                    .foregroundColor(.gray)
+
+                TextField("Buscar gimnasio...", text: $searchText)
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(hex: "#171712"))
+                    .focused($isSearchFocused)
+
+                if !searchText.isEmpty {
+                    Button {
+                        searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .frame(height: 48)
+            .background(Color(hex: "#F4F2E6"))
+            .cornerRadius(12)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+
+            Divider()
+
+            // Gym list
+            if filteredGyms.isEmpty {
+                VStack(spacing: 12) {
+                    Spacer()
+                    Image(systemName: "building.2")
+                        .font(.system(size: 40))
+                        .foregroundColor(.gray.opacity(0.4))
+                    Text("No se encontraron gimnasios")
+                        .font(.system(size: 15))
+                        .foregroundColor(.gray)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(filteredGyms) { gym in
+                            GymPickerRow(
+                                gym: gym,
+                                isSelected: selectedGym?.id == gym.id,
+                                onTap: { onSelect(gym) }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                }
+            }
+        }
+        .background(Color.white.ignoresSafeArea())
+        .preferredColorScheme(.light)
+        .onAppear { isSearchFocused = true }
+    }
+}
+
+private struct GymPickerRow: View {
+    let gym: Gym
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 14) {
+                // Gym icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(hex: gym.safeColor).opacity(0.15))
+                        .frame(width: 48, height: 48)
+
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(Color(hex: gym.safeColor))
+                }
+
+                // Gym info
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(gym.name)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "#171712"))
+                        .lineLimit(1)
+
+                    if !gym.address.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "mappin")
+                                .font(.system(size: 11))
+                            Text(gym.address)
+                                .font(.system(size: 13))
+                                .lineLimit(1)
+                        }
+                        .foregroundColor(Color(hex: "#171712").opacity(0.55))
+                    }
+                }
+
+                Spacer()
+
+                // Checkmark
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(Color(hex: "#FDD835"))
+                } else {
+                    Circle()
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1.5)
+                        .frame(width: 22, height: 22)
+                }
+            }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 4)
+        }
+
+        Divider()
+            .padding(.leading, 66)
+    }
+}
 
 struct RegisterView_Previews: PreviewProvider {
     static var previews: some View {

@@ -10,6 +10,8 @@ struct HomeView: View {
     var onNavigateToSearch: () -> Void
     var onNavigateToRoutine: () -> Void
 
+    @State private var selectedType: String = "Todos"
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -61,22 +63,37 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Estas son las máquinas disponibles en")
                             .font(.body)
-                            .foregroundColor(.textBody)
+                            .foregroundColor(Color(hex: "#171712"))
                         (
                             Text("📍 ")
                             + Text(profile.gym?.name ?? "").fontWeight(.bold)
                         )
                         .font(.body)
-                        .foregroundColor(.textBody)
+                        .foregroundColor(Color(hex: "#171712"))
                     }
 
-                    // Machine list
+                    // Filter chips
+                    MachineFilterChips(
+                        machines: machineVM.machines,
+                        selectedType: $selectedType
+                    )
+
+                    // Machine grid
                     if let gym = profile.gym {
-                        ForEach(machineVM.machines) { machine in
-                            Button {
-                                onSelectMachine(machine, gym)
-                            } label: {
-                                MachineCardView(machine: machine)
+                        let filtered = selectedType == "Todos"
+                            ? machineVM.machines
+                            : machineVM.machines.filter { $0.type.trimmingCharacters(in: .whitespaces) == selectedType }
+
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 12),
+                            GridItem(.flexible(), spacing: 12)
+                        ], spacing: 12) {
+                            ForEach(filtered) { machine in
+                                Button {
+                                    onSelectMachine(machine, gym)
+                                } label: {
+                                    MachineGridCard(machine: machine)
+                                }
                             }
                         }
                     }
@@ -95,7 +112,7 @@ struct HomeView: View {
                 }
             }
         }
-        .background(Color(hex: "#F5F5F5").ignoresSafeArea())
+        .background(Color(hex: "#FBFCF8").ignoresSafeArea())
     }
 }
 
@@ -249,77 +266,93 @@ struct StartRoutineBannerCard: View {
     }
 }
 
-// MARK: - Machine Card
+// MARK: - Filter Chips
 
-struct MachineCardView: View {
-    let machine: Machine
+private struct MachineFilterChips: View {
+    let machines: [Machine]
+    @Binding var selectedType: String
+
+    private var types: [String] {
+        let machineTypes = machines
+            .map { $0.type.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        let unique = Array(Set(machineTypes)).sorted()
+        return ["Todos"] + unique
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(machine.name)
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.textTitle)
-
-                    Text(machine.description)
-                        .font(.subheadline)
-                        .foregroundColor(.textBody)
-                        .lineLimit(3)
-                        .multilineTextAlignment(.leading)
-                }
-
-                Spacer()
-
-                AsyncImage(url: URL(string: machine.imageUrl)) { phase in
-                    switch phase {
-                    case .empty:
-                        ZStack {
-                            Color(hex:"#CACCD3")
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .gray))
-                                .scaleEffect(1.2)
-                        }
-                    case .success(let image):
-                        image.resizable().scaledToFill()
-                    case .failure:
-                        ZStack {
-                            Color(.systemGray5)
-                            Image(systemName: "dumbbell.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 32, height: 32)
-                                .foregroundColor(.gray.opacity(0.7))
-                        }
-                    @unknown default:
-                        ZStack {
-                            Color(.systemGray5)
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .gray))
-                                .scaleEffect(1.2)
+        if types.count > 1 {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(types, id: \.self) { type in
+                        let isSelected = selectedType == type
+                        Button {
+                            selectedType = type
+                        } label: {
+                            Text(type)
+                                .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+                                .foregroundColor(Color(hex: "#171712"))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(isSelected ? Color(hex: "#FDD835") : Color(hex: "#F4F2E6"))
+                                .cornerRadius(20)
                         }
                     }
                 }
-                .frame(width: 80, height: 80)
-                .clipped()
-                .cornerRadius(10)
             }
-
-            HStack {
-                Text("Ver tutorial")
-                Image(systemName: "arrow.right")
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color(hex: "#F5F5F0"))
-            .foregroundColor(.textTitle)
-            .cornerRadius(8)
-            .font(.system(size: 14, weight: .semibold))
         }
-        .padding()
+    }
+}
+
+// MARK: - Machine Grid Card
+
+private struct MachineGridCard: View {
+    let machine: Machine
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            AsyncImage(url: URL(string: machine.imageUrl)) { phase in
+                switch phase {
+                case .success(let image):
+                    image.resizable().scaledToFit()
+                default:
+                    ZStack {
+                        Color(hex: "#F0F0F0")
+                        Image(systemName: "dumbbell.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 28, height: 28)
+                            .foregroundColor(.gray.opacity(0.4))
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .aspectRatio(1, contentMode: .fit)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(machine.name)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(Color(hex: "#171712"))
+                    .lineLimit(2)
+
+                if let location = machine.location, !location.isEmpty {
+                    HStack(spacing: 2) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 8))
+                        Text(location)
+                            .font(.system(size: 11))
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(Color(hex: "#171712"))
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+        }
         .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.08), radius: 2, x: 0, y: 1)
     }
 }

@@ -23,7 +23,7 @@ struct MachineScreenContent2: View {
 
     // Dialogos
     @State private var showInfoSheet = false         // descripción de la máquina
-    @State private var showRegisterChoice = false    // “Registrar y ver” / “Solo ver video”
+    @State private var showRegisterChoice = false    // "Registrar y ver" / "Solo ver video"
 
     var body: some View {
         ZStack {
@@ -76,11 +76,16 @@ struct MachineScreenContent2: View {
                         // Títulos
                         VStack(alignment: .leading, spacing: 4) {
                             Text(machine.name)
-                                .font(.system(size: 28, weight: .bold))
+                                .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.white)
                             Text(machine.type)
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.85))
+                                .font(.system(size: 12))
+                                .foregroundColor(.white)
+                            if let location = machine.location, !location.isEmpty {
+                                Text("📍 \(location)")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white.opacity(0.85))
+                            }
                         }
                         .padding()
                     }
@@ -97,6 +102,7 @@ struct MachineScreenContent2: View {
                         ForEach(machine.defaultVideos, id: \.id) { vid in
                             VideoRowCard(
                                 video: vid,
+                                machineImageUrl: machine.imageUrl,
                                 onPlay: {
                                     // Mostrar diálogo antes de reproducir
                                     pendingVideoToPlay = vid
@@ -118,7 +124,7 @@ struct MachineScreenContent2: View {
                 }
                 .padding(.vertical)
             }
-            .background(Color(hex: "#F5F5F5").ignoresSafeArea())
+            .background(Color(hex: "#FBFCF8").ignoresSafeArea())
 
             // Feedback Modal Flotante
             if showFeedbackDialog {
@@ -275,7 +281,7 @@ struct MachineScreenContent2: View {
     }
 }
 
-// MARK: - Dialogo custom “Registrar y ver / Solo ver video”
+// MARK: - Dialogo custom "Registrar y ver / Solo ver video"
 
 private struct RegisterChoiceDialog: View {
     let title: String
@@ -290,7 +296,7 @@ private struct RegisterChoiceDialog: View {
     var body: some View {
         ZStack {
             VStack(spacing: 16) {
-                // “tarjeta” centrada
+                // "tarjeta" centrada
                 VStack(spacing: 18) {
                     Image(systemName: "play.fill")
                         .font(.system(size: 28, weight: .bold))
@@ -358,95 +364,130 @@ private struct RegisterChoiceDialog: View {
     }
 }
 
+// MARK: - Muscle Chips Row (max 1 chip por línea con wrapping)
+
+private struct MuscleChipsRow: View {
+    let muscles: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(muscles, id: \.self) { name in
+                Text(name)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "#8A6E00"))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color(hex: "#F4F2E6"))
+                    .cornerRadius(8)
+                    .lineLimit(1)
+            }
+        }
+    }
+}
+
 // MARK: - Card de Video (diseño similar al adjunto)
 
 private struct VideoRowCard: View {
     let video: Video
+    let machineImageUrl: String
     let onPlay: () -> Void
     let onRegisterOnly: () -> Void
 
+    private var sortedMuscles: [(key: String, value: Muscle)] {
+        video.musclesWorked.sorted { $0.value.weight > $1.value.weight }
+    }
+
+    private var thumbnailUrl: String {
+        let hasVideo = !video.urlVideo.isEmpty
+        if hasVideo && !video.cover.isEmpty {
+            return video.cover
+        }
+        return machineImageUrl
+    }
+
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            // Miniatura con botón de play
-            ZStack {
-                AsyncImage(url: URL(string: video.cover)) { img in
-                    img.resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 90, height: 120)
-                        .clipped()
-                        .cornerRadius(12)
-                } placeholder: {
-                    Color.gray.opacity(0.1)
-                        .frame(width: 90, height: 120)
-                        .cornerRadius(12)
-                }
-                
-                // Capa oscura encima de la miniatura
-                Color.black.opacity(0.35)
-                    .frame(width: 90, height: 120)
-                    .cornerRadius(12)
-
-                Button(action: onPlay) {
-                    Image(systemName: "play.fill")
-                        .foregroundColor(Color.white.opacity(0.9))
-                        .padding(8)
-                        .background(Color.black.opacity(0.55))
-                        .clipShape(Circle())
-                        .overlay(
-                            Circle()
-                                .stroke(Color.accentColor, lineWidth: 2) // borde amarillo
-                        )
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                // “Categoría” principal si la tienes (toma el de mayor peso si aplica)
-                if let main = video.musclesWorked.sorted(by: { $0.value.weight > $1.value.weight }).first?.key {
+        HStack(spacing: 0) {
+            // Left: text content
+            VStack(alignment: .leading, spacing: 4) {
+                // Main muscle
+                if let main = sortedMuscles.first?.key {
                     Text(main)
-                        .font(.caption.bold())
-                        .foregroundColor(.black.opacity(0.7))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "#171712"))
                 }
 
+                // Exercise title
                 Text(video.title)
-                    .font(.headline)
-                    .foregroundColor(.black)
+                    .font(.system(size: 16, weight: .heavy))
+                    .foregroundColor(Color(hex: "#171712"))
+                    .lineLimit(2)
 
-                // Chips de músculos secundarios (hasta 2 para evitar ruido)
-                HStack(spacing: 8) {
-                    ForEach(video.musclesWorked.sorted(by: { $0.value.weight > $1.value.weight }).prefix(2), id: \.key) { key, _ in
-                        Text(key)
-                            .font(.caption)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color.black.opacity(0.05))
-                            .foregroundColor(.black.opacity(0.8))
-                            .cornerRadius(10)
-                    }
-                }
+                Spacer().frame(height: 8)
 
-                // Botón registrar pequeño (opcional)
+                // Secondary muscle chips — máximo 1 línea, desbordamiento al chip 2 en línea siguiente
+                MuscleChipsRow(muscles: sortedMuscles.prefix(2).map(\.key))
+
+                Spacer()
+
+                // Register button
                 Button(action: onRegisterOnly) {
                     HStack(spacing: 6) {
                         Text("Registrar")
-                            .fontWeight(.bold)
+                            .font(.system(size: 14, weight: .semibold))
                         Image(systemName: "list.bullet.rectangle.portrait")
+                            .font(.system(size: 14))
                     }
-                    .font(.subheadline)
-                    .foregroundColor(.black)
+                    .foregroundColor(Color(hex: "#171712"))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
-                    .background(Color.accentColor)
-                    .cornerRadius(14)
+                    .background(Color(hex: "#FDD835"))
+                    .cornerRadius(12)
                 }
-                .padding(.top, 4)
             }
+            .padding(.leading, 16)
+            .padding(.vertical, 16)
+            .padding(.trailing, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
+            // Right: thumbnail
+            let hasVideo = !video.urlVideo.isEmpty
+            ZStack {
+                AsyncImage(url: URL(string: thumbnailUrl)) { img in
+                    img.resizable()
+                        .aspectRatio(contentMode: hasVideo ? .fill : .fit)
+                } placeholder: {
+                    Color(hex: "#F0F0F0")
+                }
+
+                if hasVideo {
+                    // Scrim solo cuando hay video
+                    Color.black.opacity(0.12)
+
+                    Button(action: onPlay) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.black.opacity(0.65))
+                                .frame(width: 50, height: 50)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color(hex: "#FDD835"), lineWidth: 3)
+                                )
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.white)
+                        }
+                    }
+                }
+            }
+            .frame(width: 110)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.trailing, 16)
+            .padding(.vertical, 16)
         }
-        .padding(16)
+        .frame(height: 200)
         .background(Color.white)
-        .cornerRadius(20)
-        .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
         .padding(.horizontal, 16)
     }
 }

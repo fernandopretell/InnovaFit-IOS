@@ -63,10 +63,11 @@ class MachineViewModel: ObservableObject {
 
     /// Carga todas las máquinas disponibles para un gimnasio
     /// Carga todas las máquinas disponibles para un gimnasio
+    private var loadedGymId: String?
+
     func loadMachines(forGymId gymId: String) {
-        // ✅ Previene recarga si ya hay datos
-        if !machines.isEmpty {
-            print("⏸️ Máquinas ya cargadas, no se vuelve a consultar.")
+        // Previene recarga si ya hay datos para el mismo gym
+        if !machines.isEmpty && loadedGymId == gymId {
             return
         }
 
@@ -81,6 +82,7 @@ class MachineViewModel: ObservableObject {
                 switch result {
                 case .success(let machines):
                     self?.machines = machines
+                    self?.loadedGymId = gymId
                 case .failure(let error):
                     self?.machines = []
                     self?.errorMessage = error.localizedDescription

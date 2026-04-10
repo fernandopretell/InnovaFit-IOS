@@ -19,7 +19,7 @@ struct MuscleHistoryView: View {
                     .padding(.horizontal)
                     .padding(.bottom, 16)
                 }
-                .background(Color(hex: "#F5F5F5").ignoresSafeArea())
+                .background(Color(hex: "#FBFCF8").ignoresSafeArea())
                 .onAppear { viewModel.fetchLogs() }
             }
             .fullScreenCover(isPresented: $showShareCard) {

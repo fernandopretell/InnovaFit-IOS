@@ -15,7 +15,7 @@ struct RoutineView: View {
             if routineVM.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(hex: "#F5F5F5").ignoresSafeArea())
+                    .background(Color(hex: "#FBFCF8").ignoresSafeArea())
             } else if let routine = routineVM.routine {
                 if !routineVM.isRoutineStarted {
                     StartRoutineScreen(
@@ -73,7 +73,7 @@ private struct StartRoutineScreen: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            Color(hex: "#F5F5F5").ignoresSafeArea()
+            Color(hex: "#FBFCF8").ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Back button
@@ -194,13 +194,14 @@ private struct ActiveRoutineScreen: View {
                 // Day selector
                 ScrollViewReader { proxy in
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 10) {
                             ForEach(Array(routine.days.enumerated()), id: \.offset) { index, day in
                                 DayChip(
                                     day: day,
                                     dayIndex: index,
                                     isToday: index == routineVM.todayDayIndex,
                                     isSelected: index == routineVM.selectedDayIndex,
+                                    dateLabel: dateLabelForDay(index),
                                     progress: routineVM.selectedDayIndex == index ? routineVM.selectedDayProgress : []
                                 ) {
                                     routineVM.selectDay(index: index)
@@ -265,13 +266,22 @@ private struct ActiveRoutineScreen: View {
                 }
             }
         }
-        .background(Color(hex: "#F5F5F5").ignoresSafeArea())
+        .background(Color(hex: "#FBFCF8").ignoresSafeArea())
         .task(id: routineVM.selectedDayIndex) {
             guard let day = routine.days[safe: routineVM.selectedDayIndex], !day.isRest else { return }
             for exercise in day.exercises {
                 routineVM.loadMachineForExercise(machineId: exercise.machineId, gymId: gymId)
             }
         }
+    }
+
+    private func dateLabelForDay(_ index: Int) -> String {
+        guard let startDate = routine.startDate else { return "" }
+        guard let date = Calendar.current.date(byAdding: .day, value: index, to: startDate) else { return "" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "es")
+        formatter.dateFormat = "d MMM"
+        return formatter.string(from: date)
     }
 }
 
@@ -311,7 +321,7 @@ private struct HeaderCard: View {
 
                             Text(routine.notes)
                                 .font(.system(size: 13).italic())
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color(hex: "#171712").opacity(0.65))
                                 .lineLimit(3)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -333,11 +343,12 @@ private struct HeaderCard: View {
                 Text("\(trainingDays) entreno · \(restDays) descanso")
             }
             .font(.system(size: 12, weight: .medium))
-            .foregroundColor(.secondary)
+            .foregroundColor(Color(hex: "#171712").opacity(0.7))
         }
         .padding(16)
-        .background(Color(hex: "#F3F3F3"))
+        .background(Color.white)
         .cornerRadius(16)
+        .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
     }
 }
 
@@ -376,26 +387,36 @@ private struct DayChip: View {
     let dayIndex: Int
     let isToday: Bool
     let isSelected: Bool
+    let dateLabel: String
     let progress: [Int]
     let onTap: () -> Void
 
     private let accent = Color(hex: "#FDD835")
-
-    private var isHighlighted: Bool { isSelected || isToday }
+    private let chipSize: CGFloat = 72
 
     var body: some View {
         Button(action: onTap) {
-            Text("Día \(day.dayNumber)")
-                .font(.system(size: 14, weight: isHighlighted ? .bold : .regular))
-                .foregroundColor(.black)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 10)
-                .background(isSelected ? accent.opacity(0.15) : Color.clear)
-                .cornerRadius(24)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(isHighlighted ? accent : Color.clear, lineWidth: 2)
-                )
+            VStack(spacing: 2) {
+                Text("Día \(day.dayNumber)")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(Color(hex: "#171712"))
+                if !dateLabel.isEmpty {
+                    Text(dateLabel)
+                        .font(.system(size: 9))
+                        .foregroundColor(Color(hex: "#171712").opacity(isToday ? 0.7 : 0.5))
+                }
+            }
+            .frame(width: chipSize, height: chipSize)
+            .background(isToday ? accent : Color.white)
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .stroke(
+                        isSelected && !isToday ? accent :
+                            (!isToday && !isSelected ? Color(hex: "#D6D6D6") : Color.clear),
+                        lineWidth: 1.5
+                    )
+            )
         }
     }
 }
@@ -430,89 +451,101 @@ private struct ExerciseCard: View {
         machine?.defaultVideos.first(where: { $0.title == exercise.videoTitle })?.cover
     }
 
+    private var isPast: Bool { isMissed }
+
     var body: some View {
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 6) {
-                // Location
-                if let location = machine?.location, !location.isEmpty {
-                    HStack(spacing: 5) {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.system(size: 12))
-                        Text(location)
-                            .font(.system(size: 13).italic())
-                    }
-                    .foregroundColor(Color(hex: "#9E9E9E"))
-                    .padding(.leading, 4)
-                }
-
-                HStack(spacing: 14) {
-                    // Thumbnail with status overlay
-                    ZStack {
-                        // Cover image or placeholder
-                        if let url = coverUrl, let imageUrl = URL(string: url) {
-                            AsyncImage(url: imageUrl) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image.resizable().scaledToFill()
-                                default:
-                                    Color(hex: "#E0E0E0")
-                                }
-                            }
-                        } else {
-                            ZStack {
-                                Color(hex: "#E0E0E0")
-                                Image(systemName: "dumbbell.fill")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 22, height: 22)
-                                    .foregroundColor(.gray.opacity(0.5))
+            HStack(alignment: .top, spacing: 12) {
+                // 80x80 thumbnail
+                ZStack {
+                    if let url = coverUrl, let imageUrl = URL(string: url) {
+                        AsyncImage(url: imageUrl) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().scaledToFill()
+                            default:
+                                Color(hex: "#F0F0F0")
                             }
                         }
-
-                        // Status overlay
-                        if isCompleted {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(hex: "#4CAF50").opacity(0.88))
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 26))
-                                .foregroundColor(.white)
-                        } else if isMissed {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.gray.opacity(0.55))
-                            Image(systemName: "xmark")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.white)
+                    } else {
+                        ZStack {
+                            Color(hex: "#F0F0F0")
+                            Image(systemName: "dumbbell.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(.gray.opacity(0.4))
                         }
                     }
-                    .frame(width: 56, height: 56)
-                    .clipped()
-                    .cornerRadius(12)
+                }
+                .frame(width: 80, height: 80)
+                .clipped()
+                .cornerRadius(12)
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(exercise.machineName)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.black)
-                            .lineLimit(1)
-
-                        Text(exercise.videoTitle)
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-
-                        Text("\(exercise.sets) x \(exercise.reps) reps")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Color(hex: "#B8960C"))
+                VStack(alignment: .leading, spacing: 4) {
+                    // Location tag
+                    if let location = machine?.location, !location.isEmpty {
+                        Text("📍 \(location)")
+                            .font(.system(size: 11))
+                            .foregroundColor(Color(hex: "#171712"))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color(hex: "#F3F3F3"))
+                            .cornerRadius(8)
                     }
 
-                    Spacer()
+                    // Machine name
+                    Text(exercise.machineName)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(Color(hex: "#171712"))
+                        .lineLimit(1)
+
+                    // Video title
+                    Text(exercise.videoTitle)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "#171712").opacity(0.6))
+                        .lineLimit(1)
+
+                    // Sets x reps
+                    Text(exerciseDetail)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "#171712").opacity(0.6))
                 }
-                .padding(14)
-                .background(Color.white)
-                .cornerRadius(14)
-                .shadow(color: .black.opacity(0.04), radius: 2, x: 0, y: 1)
+
+                Spacer()
+
+                // Status icon
+                if isCompleted {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(Color(hex: "#4CAF50"))
+                } else if isMissed {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(Color(hex: "#BBBBBB"))
+                } else {
+                    Circle()
+                        .stroke(Color(hex: "#D6D6D6"), lineWidth: 1.5)
+                        .frame(width: 22, height: 22)
+                }
             }
-            .opacity((isCompleted || isMissed) ? 0.5 : 1.0)
+            .padding(12)
+            .background(isPast ? Color(hex: "#F5F5F0") : Color.white)
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
+            .opacity(isPast ? 0.45 : 1.0)
         }
+    }
+
+    private var exerciseDetail: String {
+        let setsReps = "\(exercise.sets)×\(exercise.reps)"
+        if exercise.weight > 0 {
+            let w = exercise.weight.truncatingRemainder(dividingBy: 1) == 0
+                ? String(format: "%.0f", exercise.weight)
+                : String(format: "%.1f", exercise.weight)
+            return "\(setsReps) · \(w) kg"
+        }
+        return setsReps
     }
 }
 
@@ -563,33 +596,32 @@ struct ExerciseDetailSheet: View {
                                 }
                             }
                         }
-                        .frame(width: 64, height: 64)
+                        .frame(width: 80, height: 80)
                         .clipped()
                         .cornerRadius(12)
 
                         VStack(alignment: .leading, spacing: 4) {
+                            // Location pill
+                            if let location = routineVM.selectedMachine?.location, !location.isEmpty {
+                                Text("📍 \(location)")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Color(hex: "#171712"))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color(hex: "#F3F3F3"))
+                                    .cornerRadius(8)
+                            }
                             Text(exercise.machineName)
-                                .font(.system(size: 18, weight: .bold))
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(Color(hex: "#171712"))
                             Text(exercise.videoTitle)
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "#171712").opacity(0.6))
                         }
 
                         Spacer()
                     }
-                    .padding(.horizontal)
-
-                    // Location if available
-                    if let location = routineVM.selectedMachine?.location, !location.isEmpty {
-                        HStack(spacing: 8) {
-                            Image(systemName: "mappin.circle.fill")
-                                .foregroundColor(.gray)
-                            Text(location)
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
-                        }
-                        .padding(.horizontal)
-                    }
+                    .padding(.horizontal, 20)
 
                     // Stat boxes
                     HStack(spacing: 12) {
@@ -599,7 +631,7 @@ struct ExerciseDetailSheet: View {
                     }
                     .padding(.horizontal)
 
-                    // Ver técnica button
+                    // Ver video button
                     if routineVM.isLoadingMachine {
                         HStack {
                             Spacer()
@@ -612,16 +644,18 @@ struct ExerciseDetailSheet: View {
                             selectedVideo = firstVideo
                         } label: {
                             HStack {
-                                Image(systemName: "play.circle.fill")
+                                Image(systemName: "play.circle")
                                     .font(.system(size: 18))
-                                Text("Ver técnica")
+                                Text("Ver video")
                                     .font(.system(size: 16, weight: .semibold))
                             }
                             .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color(hex: "#F0F0F0"))
-                            .cornerRadius(14)
+                            .frame(height: 52)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color(hex: "#D6D6D6"), lineWidth: 1.5)
+                            )
                         }
                         .padding(.horizontal)
                     }
@@ -639,10 +673,10 @@ struct ExerciseDetailSheet: View {
                                 } else if completedSuccessfully {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.system(size: 20))
-                                        .foregroundColor(.green)
+                                        .foregroundColor(.white)
                                     Text("¡Completado!")
                                         .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(.black)
+                                        .foregroundColor(.white)
                                 } else {
                                     Image(systemName: "checkmark.circle")
                                         .font(.system(size: 20))
@@ -652,9 +686,9 @@ struct ExerciseDetailSheet: View {
                             }
                             .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
+                            .frame(height: 56)
                             .background(Color.accentColor)
-                            .cornerRadius(14)
+                            .cornerRadius(16)
                         }
                         .disabled(routineVM.isCompletingExercise || completedSuccessfully)
                         .padding(.horizontal)
@@ -662,15 +696,15 @@ struct ExerciseDetailSheet: View {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 20))
-                                .foregroundColor(.green)
+                                .foregroundColor(.white)
                             Text("Ejercicio completado")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.green)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.white)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.green.opacity(0.1))
-                        .cornerRadius(14)
+                        .frame(height: 56)
+                        .background(Color(hex: "#4CAF50"))
+                        .cornerRadius(16)
                         .padding(.horizontal)
                     }
 
@@ -686,6 +720,7 @@ struct ExerciseDetailSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.light)
         .fullScreenCover(item: $selectedVideo) { video in
             if (video.segments ?? []).isEmpty {
                 VideoPlayerView(video: video) {

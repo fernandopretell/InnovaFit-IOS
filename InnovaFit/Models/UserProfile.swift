@@ -16,4 +16,5 @@ struct UserProfile: Codable, Identifiable {
     var weight: Double
     var height: Double
     var authProvider: String?
+    var medicalConditions: String?
 }
